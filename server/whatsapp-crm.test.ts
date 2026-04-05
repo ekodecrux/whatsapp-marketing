@@ -323,3 +323,150 @@ describe("whatsapp.saveConfig", () => {
     }));
   });
 });
+
+// ─── CSV Export Tests ─────────────────────────────────────────────────────────
+
+describe("leads.exportCsv", () => {
+  it("returns empty CSV with headers when no leads", async () => {
+    const { getBusinessByOwner, getLeads } = await import("./db");
+    vi.mocked(getBusinessByOwner).mockResolvedValueOnce({
+      id: 1, ownerId: 1, name: "Test Biz", industry: null, phone: null,
+      email: null, website: null, address: null, logoUrl: null,
+      plan: "free" as const, planExpiresAt: null, isActive: true,
+      createdAt: new Date(), updatedAt: new Date(),
+    });
+    vi.mocked(getLeads).mockResolvedValueOnce([]);
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.leads.exportCsv({});
+    expect(result.count).toBe(0);
+    expect(result.csv).toContain('"ID","Name","Phone","Email","Status"');
+    expect(result.filename).toMatch(/^leads-test-biz-\d{4}-\d{2}-\d{2}\.csv$/);
+  });
+
+  it("exports leads with correct CSV structure", async () => {
+    const { getBusinessByOwner, getLeads } = await import("./db");
+    vi.mocked(getBusinessByOwner).mockResolvedValueOnce({
+      id: 1, ownerId: 1, name: "My Clinic", industry: "Clinic", phone: null,
+      email: null, website: null, address: null, logoUrl: null,
+      plan: "free" as const, planExpiresAt: null, isActive: true,
+      createdAt: new Date(), updatedAt: new Date(),
+    });
+    vi.mocked(getLeads).mockResolvedValueOnce([
+      {
+        id: 1, businessId: 1, name: "Rahul Sharma", phone: "+91 98765 43210",
+        email: "rahul@example.com", status: "new", source: "whatsapp",
+        estimatedValue: 5000, score: 80, tags: ["vip", "urgent"],
+        notes: "Interested in premium plan", createdAt: new Date("2026-01-15"),
+        updatedAt: new Date(), contactId: null, conversationId: null,
+        assignedTo: null, closedAt: null,
+      } as any,
+    ]);
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.leads.exportCsv({});
+    expect(result.count).toBe(1);
+    expect(result.csv).toContain("Rahul Sharma");
+    expect(result.csv).toContain("+91 98765 43210");
+    expect(result.csv).toContain("vip;urgent");
+    expect(result.csv).toContain("5000");
+    // Should have header + 1 data row
+    const lines = result.csv.trim().split("\n");
+    expect(lines).toHaveLength(2);
+  });
+
+  it("filters by status when provided", async () => {
+    const { getBusinessByOwner, getLeads } = await import("./db");
+    vi.mocked(getBusinessByOwner).mockResolvedValueOnce({
+      id: 1, ownerId: 1, name: "Test", industry: null, phone: null,
+      email: null, website: null, address: null, logoUrl: null,
+      plan: "free" as const, planExpiresAt: null, isActive: true,
+      createdAt: new Date(), updatedAt: new Date(),
+    });
+    vi.mocked(getLeads).mockResolvedValueOnce([]);
+    const caller = appRouter.createCaller(makeCtx());
+    await caller.leads.exportCsv({ status: "won" });
+    expect(getLeads).toHaveBeenCalledWith(1, { status: "won", search: undefined }, 10000, 0);
+  });
+
+  it("throws NOT_FOUND when no business", async () => {
+    const { getBusinessByOwner } = await import("./db");
+    vi.mocked(getBusinessByOwner).mockResolvedValueOnce(undefined);
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(caller.leads.exportCsv({})).rejects.toThrow();
+  });
+
+  it("escapes special characters in CSV fields", async () => {
+    const { getBusinessByOwner, getLeads } = await import("./db");
+    vi.mocked(getBusinessByOwner).mockResolvedValueOnce({
+      id: 1, ownerId: 1, name: "Test", industry: null, phone: null,
+      email: null, website: null, address: null, logoUrl: null,
+      plan: "free" as const, planExpiresAt: null, isActive: true,
+      createdAt: new Date(), updatedAt: new Date(),
+    });
+    vi.mocked(getLeads).mockResolvedValueOnce([
+      {
+        id: 2, businessId: 1, name: "O'Brien, John", phone: "+91 99999 88888",
+        email: null, status: "new", source: null,
+        estimatedValue: null, score: null, tags: [],
+        notes: 'Has "special" chars', createdAt: new Date(),
+        updatedAt: new Date(), contactId: null, conversationId: null,
+        assignedTo: null, closedAt: null,
+      } as any,
+    ]);
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.leads.exportCsv({});
+    // Quotes should be escaped in CSV
+    expect(result.csv).toContain("O'Brien, John");
+    expect(result.count).toBe(1);
+  });
+});
+
+// ─── Onboarding Flow Tests ────────────────────────────────────────────────────
+
+describe("Onboarding flow integration", () => {
+  it("creates business, FAQ, and auto-reply in sequence", async () => {
+    const { getBusinessByOwner, createBusiness, updateUserBusiness, createFaq, createAutoReplyRule } = await import("./db");
+
+    // Step 1: Create business
+    vi.mocked(getBusinessByOwner).mockResolvedValueOnce(undefined); // no existing business
+    const caller = appRouter.createCaller(makeCtx());
+    const bizResult = await caller.business.create({ name: "Sharma Dental", industry: "Clinic / Hospital" });
+    expect(bizResult.id).toBe(1);
+    expect(createBusiness).toHaveBeenCalledWith(expect.objectContaining({ name: "Sharma Dental" }));
+    expect(updateUserBusiness).toHaveBeenCalledWith(1, 1);
+
+    // Step 3: Create FAQ
+    vi.mocked(getBusinessByOwner).mockResolvedValueOnce({
+      id: 1, ownerId: 1, name: "Sharma Dental", industry: "Clinic", phone: null,
+      email: null, website: null, address: null, logoUrl: null,
+      plan: "free" as const, planExpiresAt: null, isActive: true,
+      createdAt: new Date(), updatedAt: new Date(),
+    });
+    const faqResult = await caller.faq.create({
+      question: "What are your hours?",
+      answer: "9 AM to 6 PM, Mon-Sat",
+    });
+    expect(faqResult.id).toBe(1);
+    expect(createFaq).toHaveBeenCalledWith(expect.objectContaining({ question: "What are your hours?" }));
+
+    // Step 4: Create welcome auto-reply
+    vi.mocked(getBusinessByOwner).mockResolvedValueOnce({
+      id: 1, ownerId: 1, name: "Sharma Dental", industry: "Clinic", phone: null,
+      email: null, website: null, address: null, logoUrl: null,
+      plan: "free" as const, planExpiresAt: null, isActive: true,
+      createdAt: new Date(), updatedAt: new Date(),
+    });
+    const replyResult = await caller.autoReply.create({
+      name: "Welcome Message",
+      triggerType: "first_message",
+      responseType: "text",
+      responseText: "Hi! Welcome to Sharma Dental. How can we help you?",
+      isActive: true,
+      priority: 10,
+    });
+    expect(replyResult.id).toBe(1);
+    expect(createAutoReplyRule).toHaveBeenCalledWith(expect.objectContaining({
+      triggerType: "first_message",
+      responseText: "Hi! Welcome to Sharma Dental. How can we help you?",
+    }));
+  });
+});

@@ -18,6 +18,7 @@ import Broadcast from "./pages/Broadcast";
 import Analytics from "./pages/Analytics";
 import WhatsAppConnect from "./pages/WhatsAppConnect";
 import Settings from "./pages/Settings";
+import Onboarding from "./pages/Onboarding";
 
 function DashboardRouter() {
   return (
@@ -45,6 +46,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
+      <Route path="/onboarding" component={Onboarding} />
       <Route path="/dashboard/:rest*" component={DashboardRouter} />
       <Route path="/dashboard" component={DashboardRouter} />
       <Route path="/404" component={NotFound} />

@@ -15,10 +15,42 @@ function generateOtp(): string {
 }
 
 async function sendOtpEmail(email: string, otp: string): Promise<void> {
-  // Use built-in LLM notification or log to console in dev
-  console.log(`[OTP] Sending OTP ${otp} to ${email}`);
-  // In production, integrate with email service (Resend, SendGrid, etc.)
-  // For now, we'll use the notifyOwner mechanism to surface the OTP
+  // Use Resend if API key is configured, otherwise fall back to console log
+  if (ENV.resendApiKey) {
+    try {
+      const { Resend } = await import("resend");
+      const resend = new Resend(ENV.resendApiKey);
+      await resend.emails.send({
+        from: `WaLeadBot <${ENV.resendFromEmail}>`,
+        to: [email],
+        subject: `Your WaLeadBot login code: ${otp}`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #ffffff;">
+            <div style="margin-bottom: 32px;">
+              <div style="display: inline-flex; align-items: center; gap: 10px; background: #f0fdf4; border-radius: 12px; padding: 10px 16px;">
+                <span style="font-size: 20px;">💬</span>
+                <span style="font-weight: 700; font-size: 16px; color: #166534;">WaLeadBot</span>
+              </div>
+            </div>
+            <h1 style="font-size: 24px; font-weight: 700; color: #111827; margin: 0 0 8px;">Your login code</h1>
+            <p style="color: #6b7280; font-size: 15px; margin: 0 0 32px; line-height: 1.6;">Use the code below to sign in to your WaLeadBot account. It expires in 10 minutes.</p>
+            <div style="background: #f0fdf4; border: 2px solid #bbf7d0; border-radius: 16px; padding: 28px; text-align: center; margin-bottom: 32px;">
+              <div style="font-size: 42px; font-weight: 800; letter-spacing: 12px; color: #15803d; font-variant-numeric: tabular-nums;">${otp}</div>
+            </div>
+            <p style="color: #9ca3af; font-size: 13px; margin: 0; line-height: 1.6;">If you didn't request this code, you can safely ignore this email. This code is valid for 10 minutes only.</p>
+            <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 24px 0;" />
+            <p style="color: #d1d5db; font-size: 12px; margin: 0;">WaLeadBot · WhatsApp Business Automation for India</p>
+          </div>
+        `,
+      });
+      console.log(`[OTP] Email sent via Resend to ${email}`);
+      return;
+    } catch (err) {
+      console.error(`[OTP] Resend failed, falling back to console:`, err);
+    }
+  }
+  // Dev fallback — OTP is returned in the API response and shown as a toast
+  console.log(`[OTP] DEV MODE — OTP for ${email}: ${otp}`);
 }
 
 const otpRouter = router({
@@ -345,6 +377,41 @@ const leadsRouter = router({
     if (!business) return 0;
     return db.getLeadsCount(business.id);
   }),
+
+  exportCsv: protectedProcedure
+    .input(z.object({
+      status: z.string().optional(),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input, ctx }) => {
+      const business = await db.getBusinessByOwner(ctx.user.id);
+      if (!business) throw new TRPCError({ code: "NOT_FOUND" });
+      const leads = await db.getLeads(business.id, { status: input.status, search: input.search }, 10000, 0);
+
+      // Build CSV string server-side
+      const headers = ["ID", "Name", "Phone", "Email", "Status", "Source", "Estimated Value", "Score", "Tags", "Notes", "Created At"];
+      const rows = leads.map((l: any) => [
+        l.id,
+        l.name ?? "",
+        l.phone ?? "",
+        l.email ?? "",
+        l.status ?? "",
+        l.source ?? "",
+        l.estimatedValue ?? "",
+        l.score ?? "",
+        Array.isArray(l.tags) ? l.tags.join(";") : (l.tags ?? ""),
+        (l.notes ?? "").replace(/"/g, '""'),
+        l.createdAt ? new Date(l.createdAt).toISOString() : "",
+      ]);
+
+      const escape = (v: any) => `"${String(v).replace(/"/g, '""')}"`;
+      const csv = [
+        headers.map(escape).join(","),
+        ...rows.map((r) => r.map(escape).join(",")),
+      ].join("\n");
+
+      return { csv, count: leads.length, filename: `leads-${business.name.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv` };
+    }),
 });
 
 // ─── FAQ Router ───────────────────────────────────────────────────────────────

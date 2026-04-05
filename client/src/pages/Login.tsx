@@ -26,10 +26,22 @@ export default function Login() {
     onError: (err) => toast.error(err.message),
   });
 
+  const utils = trpc.useUtils();
+
   const verifyOtp = trpc.otp.verifyOtp.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Welcome to WaLeadBot!");
-      navigate("/dashboard");
+      // Check if user already has a business — if not, send to onboarding
+      try {
+        const biz = await utils.business.get.fetch();
+        if (biz) {
+          navigate("/dashboard");
+        } else {
+          navigate("/onboarding");
+        }
+      } catch {
+        navigate("/onboarding");
+      }
     },
     onError: (err) => toast.error(err.message),
   });

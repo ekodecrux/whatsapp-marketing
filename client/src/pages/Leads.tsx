@@ -105,18 +105,31 @@ export default function Leads() {
     }
   };
 
-  const exportCsv = () => {
-    const headers = ["Name", "Phone", "Email", "Status", "Source", "Value", "Notes"];
-    const rows = leads.map((l: any) => [
-      l.name || "", l.phone || "", l.email || "", l.status || "",
-      l.source || "", l.estimatedValue || 0, l.notes || ""
-    ]);
-    const csv = [headers, ...rows].map((r) => r.map((v: any) => `"${v}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "leads.csv"; a.click();
-    toast.success("Leads exported!");
+  const [isExporting, setIsExporting] = useState(false);
+  const utils = trpc.useUtils();
+
+  const exportCsv = async () => {
+    setIsExporting(true);
+    try {
+      const result = await utils.leads.exportCsv.fetch({
+        status: statusFilter === "all" ? undefined : statusFilter,
+        search: search || undefined,
+      });
+      const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = result.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${result.count} leads to CSV`);
+    } catch (e: any) {
+      toast.error(e?.message || "Export failed");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const statusCounts = Object.keys(statusConfig).reduce((acc, s) => {
@@ -134,8 +147,9 @@ export default function Leads() {
           <p className="text-muted-foreground text-sm mt-1">{leads.length} total leads</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={exportCsv}>
-            <Download className="w-4 h-4 mr-2" /> Export CSV
+          <Button variant="outline" size="sm" onClick={exportCsv} disabled={isExporting}>
+            {isExporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+            {isExporting ? "Exporting..." : "Export CSV"}
           </Button>
           <Button size="sm" onClick={openCreate} className="shadow-sm">
             <Plus className="w-4 h-4 mr-2" /> Add Lead

@@ -52,4 +52,10 @@
 - [x] Vitest tests for backend routers (18 tests passing across 2 test files)
 - [x] TypeScript check — zero errors
 - [x] Final UI polish
-- [ ] Checkpoint saved
+- [x] Checkpoint saved
+
+## Phase 8: Enhancements
+- [x] Resend email OTP integration (real email delivery, graceful fallback to console in dev)
+- [x] Step-by-step onboarding wizard (business → WhatsApp → FAQ → auto-reply)
+- [x] CSV lead export on Leads page (server-side, with filename + count)
+- [x] Tests for new features (24 total tests passing)
