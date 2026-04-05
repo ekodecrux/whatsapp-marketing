@@ -1,0 +1,15 @@
+{
+  "query": "CREATE TABLE `faqs` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`businessId` int NOT NULL,\n\t`question` text NOT NULL,\n\t`answer` text NOT NULL,\n\t`keywords` json DEFAULT ('[]'),\n\t`category` varchar(100),\n\t`isActive` boolean NOT NULL DEFAULT true,\n\t`matchCount` int NOT NULL DEFAULT 0,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `faqs_id` PRIMARY KEY(`id`)\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway05.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3wJr7rn6vTFNiFP.fd467a722c41 --database iLpmcrnfVoArhharWKMmRc --execute CREATE TABLE `faqs` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`businessId` int NOT NULL,\n\t`question` text NOT NULL,\n\t`answer` text NOT NULL,\n\t`keywords` json DEFAULT ('[]'),\n\t`category` varchar(100),\n\t`isActive` boolean NOT NULL DEFAULT true,\n\t`matchCount` int NOT NULL DEFAULT 0,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `faqs_id` PRIMARY KEY(`id`)\n)",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 6 column 31 near \"'[]'),",
+    "\t`category` varchar(100),",
+    "\t`isActive` boolean NOT NULL DEFAULT true,",
+    "\t`matchCount` int NOT NULL DEFAULT 0,",
+    "\t`createdAt` timestamp NOT NULL DEFAULT (now()),",
+    "\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,",
+    "\tCONSTRAINT `faqs_id` PRIMARY KEY(`id`)",
+    ")\""
+  ]
+}

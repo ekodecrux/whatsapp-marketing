@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `users` ADD COLUMN `phone` varchar(20), ADD COLUMN `businessId` int",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway05.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3wJr7rn6vTFNiFP.fd467a722c41 --database iLpmcrnfVoArhharWKMmRc --execute ALTER TABLE `users` ADD COLUMN `phone` varchar(20), ADD COLUMN `businessId` int",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1823
+}

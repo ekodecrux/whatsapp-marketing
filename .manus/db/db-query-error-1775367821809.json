@@ -1,0 +1,11 @@
+{
+  "query": "CREATE TABLE `activity_logs` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`businessId` int NOT NULL,\n\t`userId` int,\n\t`entityType` varchar(50),\n\t`entityId` int,\n\t`action` varchar(100) NOT NULL,\n\t`description` text,\n\t`metadata` json DEFAULT ('{}'),\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `activity_logs_id` PRIMARY KEY(`id`)\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway05.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3wJr7rn6vTFNiFP.fd467a722c41 --database iLpmcrnfVoArhharWKMmRc --execute CREATE TABLE `activity_logs` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`businessId` int NOT NULL,\n\t`userId` int,\n\t`entityType` varchar(50),\n\t`entityId` int,\n\t`action` varchar(100) NOT NULL,\n\t`description` text,\n\t`metadata` json DEFAULT ('{}'),\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `activity_logs_id` PRIMARY KEY(`id`)\n)",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 9 column 31 near \"'{}'),",
+    "\t`createdAt` timestamp NOT NULL DEFAULT (now()),",
+    "\tCONSTRAINT `activity_logs_id` PRIMARY KEY(`id`)",
+    ")\""
+  ]
+}

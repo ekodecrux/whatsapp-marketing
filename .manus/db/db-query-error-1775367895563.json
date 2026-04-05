@@ -1,0 +1,14 @@
+{
+  "query": "CREATE TABLE `messages` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`businessId` int NOT NULL,\n\t`conversationId` int NOT NULL,\n\t`contactId` int NOT NULL,\n\t`waMessageId` varchar(255),\n\t`direction` enum('inbound','outbound') NOT NULL,\n\t`type` enum('text','image','audio','video','document','location','template','interactive','sticker') NOT NULL DEFAULT 'text',\n\t`content` text,\n\t`mediaUrl` varchar(1000),\n\t`mediaCaption` text,\n\t`status` enum('sent','delivered','read','failed','pending') NOT NULL DEFAULT 'pending',\n\t`isAutoReply` boolean NOT NULL DEFAULT false,\n\t`isBotMessage` boolean NOT NULL DEFAULT false,\n\t`metadata` json DEFAULT ('{}'),\n\t`sentAt` timestamp NOT NULL DEFAULT (now()),\n\t`deliveredAt` timestamp NULL,\n\t`readAt` timestamp NULL,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `messages_id` PRIMARY KEY(`id`)\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway05.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3wJr7rn6vTFNiFP.fd467a722c41 --database iLpmcrnfVoArhharWKMmRc --execute CREATE TABLE `messages` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`businessId` int NOT NULL,\n\t`conversationId` int NOT NULL,\n\t`contactId` int NOT NULL,\n\t`waMessageId` varchar(255),\n\t`direction` enum('inbound','outbound') NOT NULL,\n\t`type` enum('text','image','audio','video','document','location','template','interactive','sticker') NOT NULL DEFAULT 'text',\n\t`content` text,\n\t`mediaUrl` varchar(1000),\n\t`mediaCaption` text,\n\t`status` enum('sent','delivered','read','failed','pending') NOT NULL DEFAULT 'pending',\n\t`isAutoReply` boolean NOT NULL DEFAULT false,\n\t`isBotMessage` boolean NOT NULL DEFAULT false,\n\t`metadata` json DEFAULT ('{}'),\n\t`sentAt` timestamp NOT NULL DEFAULT (now()),\n\t`deliveredAt` timestamp NULL,\n\t`readAt` timestamp NULL,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `messages_id` PRIMARY KEY(`id`)\n)",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 15 column 31 near \"'{}'),",
+    "\t`sentAt` timestamp NOT NULL DEFAULT (now()),",
+    "\t`deliveredAt` timestamp NULL,",
+    "\t`readAt` timestamp NULL,",
+    "\t`createdAt` timestamp NOT NULL DEFAULT (now()),",
+    "\tCONSTRAINT `messages_id` PRIMARY KEY(`id`)",
+    ")\""
+  ]
+}

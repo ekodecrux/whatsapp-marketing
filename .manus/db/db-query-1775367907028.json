@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `whatsapp_configs` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`businessId` int NOT NULL,\n\t`phoneNumberId` varchar(100),\n\t`wabaId` varchar(100),\n\t`accessToken` text,\n\t`verifyToken` varchar(100),\n\t`phoneNumber` varchar(20),\n\t`displayName` varchar(255),\n\t`isConnected` boolean NOT NULL DEFAULT false,\n\t`webhookUrl` varchar(1000),\n\t`lastVerifiedAt` timestamp NULL,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `whatsapp_configs_id` PRIMARY KEY(`id`)\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway05.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3wJr7rn6vTFNiFP.fd467a722c41 --database iLpmcrnfVoArhharWKMmRc --execute CREATE TABLE `whatsapp_configs` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`businessId` int NOT NULL,\n\t`phoneNumberId` varchar(100),\n\t`wabaId` varchar(100),\n\t`accessToken` text,\n\t`verifyToken` varchar(100),\n\t`phoneNumber` varchar(20),\n\t`displayName` varchar(255),\n\t`isConnected` boolean NOT NULL DEFAULT false,\n\t`webhookUrl` varchar(1000),\n\t`lastVerifiedAt` timestamp NULL,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `whatsapp_configs_id` PRIMARY KEY(`id`)\n)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1600
+}

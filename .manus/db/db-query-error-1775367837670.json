@@ -1,0 +1,18 @@
+{
+  "query": "CREATE TABLE `broadcast_campaigns` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`businessId` int NOT NULL,\n\t`name` varchar(255) NOT NULL,\n\t`message` text NOT NULL,\n\t`mediaUrl` varchar(1000),\n\t`status` enum('draft','scheduled','sending','sent','failed') NOT NULL DEFAULT 'draft',\n\t`targetType` enum('all','tag','custom') NOT NULL DEFAULT 'all',\n\t`targetTags` json DEFAULT ('[]'),\n\t`targetContactIds` json DEFAULT ('[]'),\n\t`totalRecipients` int NOT NULL DEFAULT 0,\n\t`sentCount` int NOT NULL DEFAULT 0,\n\t`deliveredCount` int NOT NULL DEFAULT 0,\n\t`readCount` int NOT NULL DEFAULT 0,\n\t`failedCount` int NOT NULL DEFAULT 0,\n\t`scheduledAt` timestamp NULL,\n\t`startedAt` timestamp NULL,\n\t`completedAt` timestamp NULL,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `broadcast_campaigns_id` PRIMARY KEY(`id`)\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway05.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3wJr7rn6vTFNiFP.fd467a722c41 --database iLpmcrnfVoArhharWKMmRc --execute CREATE TABLE `broadcast_campaigns` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`businessId` int NOT NULL,\n\t`name` varchar(255) NOT NULL,\n\t`message` text NOT NULL,\n\t`mediaUrl` varchar(1000),\n\t`status` enum('draft','scheduled','sending','sent','failed') NOT NULL DEFAULT 'draft',\n\t`targetType` enum('all','tag','custom') NOT NULL DEFAULT 'all',\n\t`targetTags` json DEFAULT ('[]'),\n\t`targetContactIds` json DEFAULT ('[]'),\n\t`totalRecipients` int NOT NULL DEFAULT 0,\n\t`sentCount` int NOT NULL DEFAULT 0,\n\t`deliveredCount` int NOT NULL DEFAULT 0,\n\t`readCount` int NOT NULL DEFAULT 0,\n\t`failedCount` int NOT NULL DEFAULT 0,\n\t`scheduledAt` timestamp NULL,\n\t`startedAt` timestamp NULL,\n\t`completedAt` timestamp NULL,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `broadcast_campaigns_id` PRIMARY KEY(`id`)\n)",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 9 column 33 near \"'[]'),",
+    "\t`targetContactIds` json DEFAULT ('[]'),",
+    "\t`totalRecipients` int NOT NULL DEFAULT 0,",
+    "\t`sentCount` int NOT NULL DEFAULT 0,",
+    "\t`deliveredCount` int NOT NULL DEFAULT 0,",
+    "\t`readCount` int NOT NULL DEFAULT 0,",
+    "\t`failedCount` int NOT NULL DEFAULT 0,",
+    "\t`scheduledAt` timestamp NULL,",
+    "\t`startedAt` timestamp NULL,",
+    "\t`completedAt` timestamp NULL,",
+    "\t`createdAt` timestamp NOT NUL"
+  ]
+}

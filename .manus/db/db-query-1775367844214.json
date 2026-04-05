@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `businesses` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`ownerId` int NOT NULL,\n\t`name` varchar(255) NOT NULL,\n\t`industry` varchar(100),\n\t`phone` varchar(20),\n\t`email` varchar(320),\n\t`website` varchar(500),\n\t`address` text,\n\t`logoUrl` varchar(1000),\n\t`plan` enum('free','starter','pro','enterprise') NOT NULL DEFAULT 'free',\n\t`planExpiresAt` timestamp NULL,\n\t`isActive` boolean NOT NULL DEFAULT true,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `businesses_id` PRIMARY KEY(`id`)\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway05.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3wJr7rn6vTFNiFP.fd467a722c41 --database iLpmcrnfVoArhharWKMmRc --execute CREATE TABLE `businesses` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`ownerId` int NOT NULL,\n\t`name` varchar(255) NOT NULL,\n\t`industry` varchar(100),\n\t`phone` varchar(20),\n\t`email` varchar(320),\n\t`website` varchar(500),\n\t`address` text,\n\t`logoUrl` varchar(1000),\n\t`plan` enum('free','starter','pro','enterprise') NOT NULL DEFAULT 'free',\n\t`planExpiresAt` timestamp NULL,\n\t`isActive` boolean NOT NULL DEFAULT true,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `businesses_id` PRIMARY KEY(`id`)\n)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1552
+}
