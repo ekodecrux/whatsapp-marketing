@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `business_members` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`businessId` int NOT NULL,\n\t`userId` int NOT NULL,\n\t`role` enum('owner','admin','member','viewer') NOT NULL DEFAULT 'member',\n\t`invitedBy` int,\n\t`inviteEmail` varchar(320),\n\t`inviteToken` varchar(128),\n\t`inviteAccepted` boolean NOT NULL DEFAULT false,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `business_members_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway05.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3wJr7rn6vTFNiFP.fd467a722c41 --database iLpmcrnfVoArhharWKMmRc --execute CREATE TABLE `business_members` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`businessId` int NOT NULL,\n\t`userId` int NOT NULL,\n\t`role` enum('owner','admin','member','viewer') NOT NULL DEFAULT 'member',\n\t`invitedBy` int,\n\t`inviteEmail` varchar(320),\n\t`inviteToken` varchar(128),\n\t`inviteAccepted` boolean NOT NULL DEFAULT false,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `business_members_id` PRIMARY KEY(`id`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1788
+}

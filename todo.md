@@ -59,3 +59,28 @@
 - [x] Step-by-step onboarding wizard (business → WhatsApp → FAQ → auto-reply)
 - [x] CSV lead export on Leads page (server-side, with filename + count)
 - [x] Tests for new features (24 total tests passing)
+
+## Phase 9: Multi-Tenant Expansion
+- [x] DB: subscriptions table (plan, status, stripe_customer_id, stripe_subscription_id)
+- [x] DB: widget_tokens table (public token, business_id, config JSON)
+- [x] DB: business_members table (user_id, business_id, role: owner/admin/member)
+- [x] DB: otp_tokens — add channel column (email/sms/whatsapp)
+- [x] DB: businesses — add stripe_customer_id, current_plan, plan_expires_at
+- [x] Multi-tenant: all queries scoped to businessId via ctx
+- [x] MSG91 SMS OTP integration with graceful fallback
+- [x] MSG91 WhatsApp OTP integration
+- [x] OTP login: channel selector (email / SMS / WhatsApp)
+- [x] Stripe Checkout integration (₹299/₹599/₹999 plans)
+- [x] Stripe webhook handler (subscription created/updated/cancelled)
+- [x] Subscription gating middleware (plan limits enforcement)
+- [x] Embeddable widget API endpoint (public, no auth)
+- [x] Widget token generator in dashboard
+- [x] Widget snippet builder (HTML + JS chat bubble)
+- [x] Enhanced onboarding: business info capture (name, industry, phone, address, logo)
+- [x] WhatsApp integration wizard (step-by-step Meta API setup with screenshots guide)
+- [x] Multi-business switcher in sidebar
+- [x] Business member invite system
+- [x] Super-admin dashboard (all businesses, revenue, usage)
+- [x] Pricing page with Stripe Checkout redirect
+- [x] Subscription management page (upgrade/downgrade/cancel)
+- [x] Plan limits UI (usage bars, upgrade prompts)

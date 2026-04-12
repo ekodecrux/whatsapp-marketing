@@ -19,6 +19,9 @@ import Analytics from "./pages/Analytics";
 import WhatsAppConnect from "./pages/WhatsAppConnect";
 import Settings from "./pages/Settings";
 import Onboarding from "./pages/Onboarding";
+import Widget from "./pages/Widget";
+import Team from "./pages/Team";
+import Billing from "./pages/Billing";
 
 function DashboardRouter() {
   return (
@@ -35,6 +38,9 @@ function DashboardRouter() {
         <Route path="/dashboard/analytics" component={Analytics} />
         <Route path="/dashboard/whatsapp" component={WhatsAppConnect} />
         <Route path="/dashboard/settings" component={Settings} />
+        <Route path="/dashboard/widget" component={Widget} />
+        <Route path="/dashboard/team" component={Team} />
+        <Route path="/dashboard/billing" component={Billing} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

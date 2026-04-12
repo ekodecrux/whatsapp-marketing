@@ -5,6 +5,7 @@ import {
   activityLogs,
   autoReplyRules,
   broadcastCampaigns,
+  businessMembers,
   businesses,
   contacts,
   conversationFlows,
@@ -14,8 +15,14 @@ import {
   leads,
   messages,
   otpTokens,
+  subscriptions,
   users,
   whatsappConfigs,
+  widgetTokens,
+  type InsertBusiness,
+  type InsertBusinessMember,
+  type InsertSubscription,
+  type InsertWidgetToken,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -106,14 +113,14 @@ export async function updateUserBusiness(userId: number, businessId: number) {
 
 // ─── OTP ──────────────────────────────────────────────────────────────────────
 
-export async function createOtp(email: string, otp: string) {
+export async function createOtp(identifier: string, otp: string, channel: "email" | "sms" | "whatsapp" = "email") {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
-  await db.insert(otpTokens).values({ email, otp, expiresAt });
+  await db.insert(otpTokens).values({ identifier, otp, expiresAt, channel });
 }
 
-export async function verifyOtp(email: string, otp: string) {
+export async function verifyOtp(identifier: string, otp: string) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const now = new Date();
@@ -122,7 +129,7 @@ export async function verifyOtp(email: string, otp: string) {
     .from(otpTokens)
     .where(
       and(
-        eq(otpTokens.email, email),
+        eq(otpTokens.identifier, identifier),
         eq(otpTokens.otp, otp),
         eq(otpTokens.used, false),
         gt(otpTokens.expiresAt, now)
@@ -595,4 +602,179 @@ export async function getRecentActivity(businessId: number, limit = 20) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(activityLogs).where(eq(activityLogs.businessId, businessId)).orderBy(desc(activityLogs.createdAt)).limit(limit);
+}
+
+// ─── Business Members (Multi-Tenant) ─────────────────────────────────────────
+
+export async function getBusinessMembers(businessId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: businessMembers.id,
+      userId: businessMembers.userId,
+      role: businessMembers.role,
+      inviteEmail: businessMembers.inviteEmail,
+      inviteAccepted: businessMembers.inviteAccepted,
+      createdAt: businessMembers.createdAt,
+      userName: users.name,
+      userEmail: users.email,
+    })
+    .from(businessMembers)
+    .leftJoin(users, eq(businessMembers.userId, users.id))
+    .where(eq(businessMembers.businessId, businessId));
+}
+
+export async function addBusinessMember(data: InsertBusinessMember) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const [result] = await db.insert(businessMembers).values(data).$returningId();
+  return result.id;
+}
+
+export async function removeBusinessMember(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(businessMembers).where(eq(businessMembers.id, id));
+}
+
+export async function updateBusinessMemberRole(id: number, role: "owner" | "admin" | "member" | "viewer") {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(businessMembers).set({ role }).where(eq(businessMembers.id, id));
+}
+
+export async function getUserBusinesses(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  // Get businesses where user is owner
+  const owned = await db.select().from(businesses).where(eq(businesses.ownerId, userId));
+  // Get businesses where user is a member
+  const memberships = await db
+    .select({ businessId: businessMembers.businessId, role: businessMembers.role })
+    .from(businessMembers)
+    .where(and(eq(businessMembers.userId, userId), eq(businessMembers.inviteAccepted, true)));
+  const memberBusinessIds = memberships.map((m) => m.businessId);
+  let memberBusinesses: (typeof businesses.$inferSelect)[] = [];
+  if (memberBusinessIds.length > 0) {
+    memberBusinesses = await db
+      .select()
+      .from(businesses)
+      .where(sql`${businesses.id} IN (${sql.join(memberBusinessIds.map((id) => sql`${id}`), sql`, `)})`);
+  }
+  return [...owned, ...memberBusinesses];
+}
+
+// ─── Subscriptions ────────────────────────────────────────────────────────────
+
+export async function getSubscription(businessId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(subscriptions)
+    .where(and(eq(subscriptions.businessId, businessId), eq(subscriptions.status, "active")))
+    .limit(1);
+  return result[0];
+}
+
+export async function createSubscription(data: InsertSubscription) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const [result] = await db.insert(subscriptions).values(data).$returningId();
+  return result.id;
+}
+
+export async function updateSubscription(id: number, data: Partial<typeof subscriptions.$inferInsert>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(subscriptions).set(data).where(eq(subscriptions.id, id));
+}
+
+export async function getSubscriptionByStripeId(stripeSubscriptionId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(subscriptions)
+    .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId))
+    .limit(1);
+  return result[0];
+}
+
+// ─── Widget Tokens ────────────────────────────────────────────────────────────
+
+export async function getWidgetTokens(businessId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(widgetTokens).where(eq(widgetTokens.businessId, businessId)).orderBy(desc(widgetTokens.createdAt));
+}
+
+export async function getWidgetTokenByToken(token: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(widgetTokens).where(eq(widgetTokens.token, token)).limit(1);
+  return result[0];
+}
+
+export async function createWidgetToken(data: InsertWidgetToken) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const [result] = await db.insert(widgetTokens).values(data).$returningId();
+  return result.id;
+}
+
+export async function updateWidgetToken(id: number, data: Partial<typeof widgetTokens.$inferInsert>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(widgetTokens).set(data).where(eq(widgetTokens.id, id));
+}
+
+export async function deleteWidgetToken(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(widgetTokens).where(eq(widgetTokens.id, id));
+}
+
+// ─── User by Phone (for SMS OTP) ─────────────────────────────────────────────
+
+export async function getUserByPhone(phone: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.phone, phone)).limit(1);
+  return result[0];
+}
+
+export async function createUserByPhone(phone: string, name?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const openId = `phone_${phone.replace(/[^0-9]/g, "")}_${Date.now()}`;
+  await db.insert(users).values({
+    openId,
+    phone,
+    name: name || `User ${phone.slice(-4)}`,
+    loginMethod: "otp_sms",
+    lastSignedIn: new Date(),
+  });
+  return getUserByPhone(phone);
+}
+
+export async function getAllBusinesses(limit = 100, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(businesses).orderBy(desc(businesses.createdAt)).limit(limit).offset(offset);
+}
+
+export async function getBusinessesCount() {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.select({ count: sql<number>`count(*)` }).from(businesses);
+  return Number(result[0]?.count ?? 0);
+}
+
+export async function getUsersCount() {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.select({ count: sql<number>`count(*)` }).from(users);
+  return Number(result[0]?.count ?? 0);
 }

@@ -20,7 +20,9 @@ export const users = mysqlTable("users", {
   phone: varchar("phone", { length: 20 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  businessId: int("businessId"),
+  businessId: int("businessId"), // primary/active business
+  isVerified: boolean("isVerified").default(false).notNull(),
+  avatarUrl: varchar("avatarUrl", { length: 1000 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -29,13 +31,15 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// OTP tokens for email-based login
+// OTP tokens — supports email, sms, whatsapp channels
 export const otpTokens = mysqlTable("otp_tokens", {
   id: int("id").autoincrement().primaryKey(),
-  email: varchar("email", { length: 320 }).notNull(),
+  identifier: varchar("identifier", { length: 320 }).notNull(), // email or phone
+  channel: mysqlEnum("channel", ["email", "sms", "whatsapp"]).default("email").notNull(),
   otp: varchar("otp", { length: 8 }).notNull(),
   expiresAt: timestamp("expiresAt").notNull(),
   used: boolean("used").default(false).notNull(),
+  attempts: int("attempts").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -52,16 +56,102 @@ export const businesses = mysqlTable("businesses", {
   email: varchar("email", { length: 320 }),
   website: varchar("website", { length: 500 }),
   address: text("address"),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 100 }),
+  pincode: varchar("pincode", { length: 10 }),
   logoUrl: varchar("logoUrl", { length: 1000 }),
-  plan: mysqlEnum("plan", ["free", "starter", "pro", "enterprise"]).default("free").notNull(),
+  description: text("description"),
+  // Subscription
+  plan: mysqlEnum("plan", ["free", "starter", "growth", "pro"]).default("free").notNull(),
   planExpiresAt: timestamp("planExpiresAt"),
+  stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 255 }),
+  subscriptionStatus: mysqlEnum("subscriptionStatus", ["active", "trialing", "past_due", "cancelled", "none"]).default("none").notNull(),
+  // Limits
+  maxContacts: int("maxContacts").default(500).notNull(),
+  maxMessagesPerMonth: int("maxMessagesPerMonth").default(1000).notNull(),
+  messagesUsedThisMonth: int("messagesUsedThisMonth").default(0).notNull(),
+  messagesResetAt: timestamp("messagesResetAt"),
   isActive: boolean("isActive").default(true).notNull(),
+  onboardingCompleted: boolean("onboardingCompleted").default(false).notNull(),
+  onboardingStep: int("onboardingStep").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 export type Business = typeof businesses.$inferSelect;
 export type InsertBusiness = typeof businesses.$inferInsert;
+
+// ─── Business Members (Multi-Tenant Team Access) ──────────────────────────────
+
+export const businessMembers = mysqlTable("business_members", {
+  id: int("id").autoincrement().primaryKey(),
+  businessId: int("businessId").notNull(),
+  userId: int("userId").notNull(),
+  role: mysqlEnum("role", ["owner", "admin", "member", "viewer"]).default("member").notNull(),
+  invitedBy: int("invitedBy"),
+  inviteEmail: varchar("inviteEmail", { length: 320 }),
+  inviteToken: varchar("inviteToken", { length: 128 }),
+  inviteAccepted: boolean("inviteAccepted").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BusinessMember = typeof businessMembers.$inferSelect;
+export type InsertBusinessMember = typeof businessMembers.$inferInsert;
+
+// ─── Subscriptions / Payment History ─────────────────────────────────────────
+
+export const subscriptions = mysqlTable("subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  businessId: int("businessId").notNull(),
+  plan: mysqlEnum("plan", ["starter", "growth", "pro"]).notNull(),
+  status: mysqlEnum("status", ["active", "trialing", "past_due", "cancelled", "expired"]).notNull(),
+  stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 255 }),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
+  amountPaise: int("amountPaise").notNull(), // amount in paise (₹299 = 29900)
+  currency: varchar("currency", { length: 3 }).default("INR").notNull(),
+  currentPeriodStart: timestamp("currentPeriodStart"),
+  currentPeriodEnd: timestamp("currentPeriodEnd"),
+  cancelledAt: timestamp("cancelledAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = typeof subscriptions.$inferInsert;
+
+// ─── Widget Tokens (Embeddable Lead Capture) ──────────────────────────────────
+
+export const widgetTokens = mysqlTable("widget_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  businessId: int("businessId").notNull(),
+  token: varchar("token", { length: 128 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).default("Default Widget").notNull(),
+  config: json("config").$type<WidgetConfig>().default({} as WidgetConfig),
+  isActive: boolean("isActive").default(true).notNull(),
+  leadsGenerated: int("leadsGenerated").default(0).notNull(),
+  viewCount: int("viewCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WidgetConfig = {
+  buttonColor?: string;
+  buttonText?: string;
+  welcomeMessage?: string;
+  collectName?: boolean;
+  collectEmail?: boolean;
+  collectPhone?: boolean;
+  customQuestion?: string;
+  position?: "bottom-right" | "bottom-left";
+  whatsappNumber?: string;
+  prefilledMessage?: string;
+};
+
+export type WidgetToken = typeof widgetTokens.$inferSelect;
+export type InsertWidgetToken = typeof widgetTokens.$inferInsert;
 
 // ─── WhatsApp Configuration ───────────────────────────────────────────────────
 
@@ -77,6 +167,7 @@ export const whatsappConfigs = mysqlTable("whatsapp_configs", {
   isConnected: boolean("isConnected").default(false).notNull(),
   webhookUrl: varchar("webhookUrl", { length: 1000 }),
   lastVerifiedAt: timestamp("lastVerifiedAt"),
+  setupStep: int("setupStep").default(0).notNull(), // 0=not started, 1=creds saved, 2=webhook set, 3=verified
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -89,7 +180,7 @@ export type InsertWhatsappConfig = typeof whatsappConfigs.$inferInsert;
 export const contacts = mysqlTable("contacts", {
   id: int("id").autoincrement().primaryKey(),
   businessId: int("businessId").notNull(),
-  waId: varchar("waId", { length: 50 }).notNull(), // WhatsApp phone number
+  waId: varchar("waId", { length: 50 }).notNull(),
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 320 }),
   phone: varchar("phone", { length: 20 }),
@@ -173,6 +264,7 @@ export const leads = mysqlTable("leads", {
   tags: json("tags").$type<string[]>().default([]),
   lastContactedAt: timestamp("lastContactedAt"),
   estimatedValue: bigint("estimatedValue", { mode: "number" }),
+  closedAt: timestamp("closedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -261,8 +353,7 @@ export const broadcastCampaigns = mysqlTable("broadcast_campaigns", {
   status: mysqlEnum("status", ["draft", "scheduled", "sending", "sent", "failed"]).default("draft").notNull(),
   targetType: mysqlEnum("targetType", ["all", "tag", "custom"]).default("all").notNull(),
   targetTags: json("targetTags").$type<string[]>().default([]),
-  targetContactIds: json("targetContactIds").$type<number[]>().default([]),
-  totalRecipients: int("totalRecipients").default(0).notNull(),
+  recipientCount: int("recipientCount").default(0).notNull(),
   sentCount: int("sentCount").default(0).notNull(),
   deliveredCount: int("deliveredCount").default(0).notNull(),
   readCount: int("readCount").default(0).notNull(),

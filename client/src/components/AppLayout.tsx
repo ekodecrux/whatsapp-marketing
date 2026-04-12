@@ -9,7 +9,8 @@ import { toast } from "sonner";
 import {
   MessageSquare, LayoutDashboard, Users, MessageCircle, Bot,
   Zap, Megaphone, BarChart3, Settings, LogOut, ChevronLeft,
-  ChevronRight, HelpCircle, Wifi, WifiOff, Menu, X, GitBranch
+  ChevronRight, HelpCircle, Wifi, WifiOff, Menu, X, GitBranch,
+  Globe, UserPlus, CreditCard
 } from "lucide-react";
 
 const navItems = [
@@ -23,6 +24,9 @@ const navItems = [
   { path: "/dashboard/broadcast", icon: <Megaphone className="w-5 h-5" />, label: "Broadcast" },
   { path: "/dashboard/analytics", icon: <BarChart3 className="w-5 h-5" />, label: "Analytics" },
   { path: "/dashboard/whatsapp", icon: <MessageSquare className="w-5 h-5" />, label: "WhatsApp" },
+  { path: "/dashboard/widget", icon: <Globe className="w-5 h-5" />, label: "Widget" },
+  { path: "/dashboard/team", icon: <UserPlus className="w-5 h-5" />, label: "Team" },
+  { path: "/dashboard/billing", icon: <CreditCard className="w-5 h-5" />, label: "Billing" },
   { path: "/dashboard/settings", icon: <Settings className="w-5 h-5" />, label: "Settings" },
 ];
 

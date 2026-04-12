@@ -603,7 +603,7 @@ const broadcastRouter = router({
       const id = await db.createBroadcastCampaign({
         ...input,
         businessId: business.id,
-        totalRecipients: recipients.length,
+        recipientCount: recipients.length,
         status: input.scheduledAt ? "scheduled" : "draft",
       });
       return { id, totalRecipients: recipients.length };
@@ -719,6 +719,281 @@ const leadFormsRouter = router({
     }),
 });
 
+// ─── MSG91 SMS/WhatsApp OTP ─────────────────────────────────────────────────
+
+async function sendOtpSms(phone: string, otp: string): Promise<void> {
+  if (ENV.msg91AuthKey) {
+    try {
+      const url = `https://api.msg91.com/api/v5/otp?template_id=${ENV.msg91TemplateId}&mobile=${encodeURIComponent(phone)}&authkey=${ENV.msg91AuthKey}&otp=${otp}`;
+      const resp = await fetch(url, { method: "POST" });
+      const data = await resp.json() as { type?: string };
+      if (data.type === "success") {
+        console.log(`[OTP] SMS sent via MSG91 to ${phone}`);
+        return;
+      }
+    } catch (err) {
+      console.error(`[OTP] MSG91 SMS failed:`, err);
+    }
+  }
+  console.log(`[OTP] DEV MODE — SMS OTP for ${phone}: ${otp}`);
+}
+
+async function sendOtpWhatsApp(phone: string, otp: string): Promise<void> {
+  if (ENV.msg91AuthKey && ENV.msg91WhatsappTemplateId) {
+    try {
+      const resp = await fetch(`https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", authkey: ENV.msg91AuthKey },
+        body: JSON.stringify({
+          integrated_number: ENV.msg91SenderId,
+          content_type: "template",
+          payload: {
+            to: phone,
+            type: "template",
+            template: { name: ENV.msg91WhatsappTemplateId, language: { code: "en" }, components: [{ type: "body", parameters: [{ type: "text", text: otp }] }] },
+          },
+        }),
+      });
+      const data = await resp.json() as { type?: string };
+      if (data.type === "success") {
+        console.log(`[OTP] WhatsApp OTP sent via MSG91 to ${phone}`);
+        return;
+      }
+    } catch (err) {
+      console.error(`[OTP] MSG91 WhatsApp failed:`, err);
+    }
+  }
+  console.log(`[OTP] DEV MODE — WhatsApp OTP for ${phone}: ${otp}`);
+}
+
+const smsOtpRouter = router({
+  send: publicProcedure
+    .input(z.object({ phone: z.string().min(10), channel: z.enum(["sms", "whatsapp"]).default("sms") }))
+    .mutation(async ({ input }) => {
+      const otp = generateOtp();
+      await db.createOtp(input.phone, otp, input.channel);
+      if (input.channel === "whatsapp") {
+        await sendOtpWhatsApp(input.phone, otp);
+      } else {
+        await sendOtpSms(input.phone, otp);
+      }
+      const isDev = process.env.NODE_ENV === "development";
+      return { success: true, ...(isDev ? { devOtp: otp } : {}) };
+    }),
+
+  verify: publicProcedure
+    .input(z.object({ phone: z.string().min(10), otp: z.string().min(6).max(6) }))
+    .mutation(async ({ input, ctx }) => {
+      const valid = await db.verifyOtp(input.phone, input.otp);
+      if (!valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid or expired OTP" });
+
+      let user = await db.getUserByPhone(input.phone);
+      if (!user) {
+        user = await db.createUserByPhone(input.phone);
+      }
+      if (!user) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create user" });
+
+      const secret = new TextEncoder().encode(ENV.cookieSecret);
+      const token = await new SignJWT({ sub: user.openId, id: user.id, phone: user.phone, role: user.role })
+        .setProtectedHeader({ alg: "HS256" })
+        .setExpirationTime("30d")
+        .sign(secret);
+
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: 30 * 24 * 60 * 60 * 1000 });
+      return { success: true, user: { id: user.id, phone: user.phone, name: user.name, role: user.role } };
+    }),
+});
+
+// ─── Business Members Router ──────────────────────────────────────────────────
+
+const membersRouter = router({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const business = await db.getBusinessByOwner(ctx.user.id);
+    if (!business) return [];
+    return db.getBusinessMembers(business.id);
+  }),
+
+  invite: protectedProcedure
+    .input(z.object({ email: z.string().email(), role: z.enum(["admin", "member", "viewer"]).default("member") }))
+    .mutation(async ({ input, ctx }) => {
+      const business = await db.getBusinessByOwner(ctx.user.id);
+      if (!business) throw new TRPCError({ code: "NOT_FOUND" });
+      const inviteToken = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      // Create placeholder user or find existing
+      let invitedUser = await db.getUserByEmail(input.email);
+      if (!invitedUser) {
+        invitedUser = await db.createUserByEmail(input.email, input.email.split("@")[0]);
+      }
+      if (!invitedUser) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      await db.addBusinessMember({
+        businessId: business.id,
+        userId: invitedUser.id,
+        role: input.role,
+        invitedBy: ctx.user.id,
+        inviteEmail: input.email,
+        inviteToken,
+        inviteAccepted: false,
+      });
+      return { success: true, inviteToken };
+    }),
+
+  remove: protectedProcedure
+    .input(z.object({ memberId: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.removeBusinessMember(input.memberId);
+      return { success: true };
+    }),
+
+  updateRole: protectedProcedure
+    .input(z.object({ memberId: z.number(), role: z.enum(["admin", "member", "viewer"]) }))
+    .mutation(async ({ input }) => {
+      await db.updateBusinessMemberRole(input.memberId, input.role);
+      return { success: true };
+    }),
+
+  myBusinesses: protectedProcedure.query(async ({ ctx }) => {
+    return db.getUserBusinesses(ctx.user.id);
+  }),
+});
+
+// ─── Subscription / Stripe Router ────────────────────────────────────────────
+
+const PLAN_PRICES: Record<string, { paise: number; label: string; priceId: string }> = {
+  starter: { paise: 29900, label: "₹299/month", priceId: ENV.stripeStarterPriceId },
+  growth: { paise: 59900, label: "₹599/month", priceId: ENV.stripeGrowthPriceId },
+  pro: { paise: 99900, label: "₹999/month", priceId: ENV.stripeProPriceId },
+};
+
+const subscriptionRouter = router({
+  get: protectedProcedure.query(async ({ ctx }) => {
+    const business = await db.getBusinessByOwner(ctx.user.id);
+    if (!business) return null;
+    const sub = await db.getSubscription(business.id);
+    return { business: { plan: business.plan, subscriptionStatus: business.subscriptionStatus, maxContacts: business.maxContacts, maxMessagesPerMonth: business.maxMessagesPerMonth, messagesUsedThisMonth: business.messagesUsedThisMonth }, subscription: sub };
+  }),
+
+  createCheckout: protectedProcedure
+    .input(z.object({ plan: z.enum(["starter", "growth", "pro"]), successUrl: z.string(), cancelUrl: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ENV.stripeSecretKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Stripe not configured" });
+      const business = await db.getBusinessByOwner(ctx.user.id);
+      if (!business) throw new TRPCError({ code: "NOT_FOUND" });
+      const { default: Stripe } = await import("stripe");
+      const stripe = new Stripe(ENV.stripeSecretKey);
+      const planInfo = PLAN_PRICES[input.plan];
+      if (!planInfo) throw new TRPCError({ code: "BAD_REQUEST" });
+
+      let customerId = business.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({ email: ctx.user.email || undefined, name: business.name, metadata: { businessId: String(business.id) } });
+        customerId = customer.id;
+        await db.updateBusiness(business.id, { stripeCustomerId: customerId });
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ["card"],
+        mode: "subscription",
+        line_items: [{ price: planInfo.priceId, quantity: 1 }],
+        success_url: input.successUrl + "?session_id={CHECKOUT_SESSION_ID}",
+        cancel_url: input.cancelUrl,
+        metadata: { businessId: String(business.id), plan: input.plan },
+      });
+      return { url: session.url, sessionId: session.id };
+    }),
+
+  cancelSubscription: protectedProcedure.mutation(async ({ ctx }) => {
+    if (!ENV.stripeSecretKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Stripe not configured" });
+    const business = await db.getBusinessByOwner(ctx.user.id);
+    if (!business || !business.stripeSubscriptionId) throw new TRPCError({ code: "NOT_FOUND" });
+    const { default: Stripe } = await import("stripe");
+    const stripe = new Stripe(ENV.stripeSecretKey);
+    await stripe.subscriptions.cancel(business.stripeSubscriptionId);
+    await db.updateBusiness(business.id, { subscriptionStatus: "cancelled", plan: "free" });
+    return { success: true };
+  }),
+});
+
+// ─── Widget Tokens Router ─────────────────────────────────────────────────────
+
+const widgetRouter = router({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const business = await db.getBusinessByOwner(ctx.user.id);
+    if (!business) return [];
+    return db.getWidgetTokens(business.id);
+  }),
+
+  create: protectedProcedure
+    .input(z.object({ name: z.string().min(1).default("Default Widget"), config: z.any().optional() }))
+    .mutation(async ({ input, ctx }) => {
+      const business = await db.getBusinessByOwner(ctx.user.id);
+      if (!business) throw new TRPCError({ code: "NOT_FOUND" });
+      const token = `wlb_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+      const id = await db.createWidgetToken({ businessId: business.id, token, name: input.name, config: input.config || {} });
+      return { id, token };
+    }),
+
+  update: protectedProcedure
+    .input(z.object({ id: z.number(), name: z.string().optional(), config: z.any().optional(), isActive: z.boolean().optional() }))
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateWidgetToken(id, data as any);
+      return { success: true };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.deleteWidgetToken(input.id);
+      return { success: true };
+    }),
+
+  getSnippet: protectedProcedure
+    .input(z.object({ token: z.string() }))
+    .query(async ({ input }) => {
+      const widget = await db.getWidgetTokenByToken(input.token);
+      if (!widget) throw new TRPCError({ code: "NOT_FOUND" });
+      const config = (widget.config as Record<string, unknown>) || {};
+      const waNumber = (config.waNumber as string) || "";
+      const message = (config.welcomeMessage as string) || "Hi! I'm interested in your services.";
+      const snippet = `<!-- WaLeadBot Widget -->
+<script>
+(function(w,d,s,l,i){
+  w[l]=w[l]||[];w[l].push({'widgetId':i,'waNumber':'${waNumber}','message':'${message.replace(/'/g, "\\'")}'});
+  var f=d.getElementsByTagName(s)[0],j=d.createElement(s);
+  j.async=true;j.src='${ENV.appUrl}/widget.js?t='+new Date().getTime();
+  f.parentNode.insertBefore(j,f);
+})(window,document,'script','_wlb','${input.token}');
+</script>
+<!-- End WaLeadBot Widget -->`;
+      return { snippet, widget };
+    }),
+});
+
+// ─── Admin Router (Super Admin) ───────────────────────────────────────────────
+
+const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+  return next({ ctx });
+});
+
+const adminRouter = router({
+  stats: adminProcedure.query(async () => {
+    const [totalBusinesses, totalUsers] = await Promise.all([
+      db.getBusinessesCount(),
+      db.getUsersCount(),
+    ]);
+    return { totalBusinesses, totalUsers };
+  }),
+
+  businesses: adminProcedure
+    .input(z.object({ limit: z.number().default(50), offset: z.number().default(0) }))
+    .query(async ({ input }) => {
+      return db.getAllBusinesses(input.limit, input.offset);
+    }),
+});
+
 // ─── App Router ───────────────────────────────────────────────────────────────
 
 export const appRouter = router({
@@ -732,7 +1007,12 @@ export const appRouter = router({
     }),
   }),
   otp: otpRouter,
+  smsOtp: smsOtpRouter,
   business: businessRouter,
+  members: membersRouter,
+  subscription: subscriptionRouter,
+  widget: widgetRouter,
+  admin: adminRouter,
   whatsapp: whatsappRouter,
   contacts: contactsRouter,
   conversations: conversationsRouter,
