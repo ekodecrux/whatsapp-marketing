@@ -3,6 +3,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { desc, gte, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { agentsRouter, aiRouter, anomalyRouter, couponsRouter, integrationsRouter, leadCommentsRouter, scheduledReportsRouter, sharedReportsRouter, sloRouter } from "./routers-gaps";
+import { templatesRouter, webhooksRouter } from "./routers-templates-webhooks";
 import { SignJWT } from "jose";
 import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -1048,6 +1049,8 @@ export const appRouter = router({
   scheduledReports: scheduledReportsRouter,
   integrations: integrationsRouter,
   agents: agentsRouter,
+  templates: templatesRouter,
+  webhooks: webhooksRouter,
 });
 
 export type AppRouter = typeof appRouter;

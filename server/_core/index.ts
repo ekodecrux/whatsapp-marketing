@@ -8,6 +8,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { webhookRouter } from "../webhook";
+import { publicApiRouter } from "../public-api";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -36,6 +37,8 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+  // Public API (widget token auth)
+  app.use(publicApiRouter);
   // WhatsApp webhook
   app.use(webhookRouter);
   // tRPC API

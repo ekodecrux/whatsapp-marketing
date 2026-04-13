@@ -27,6 +27,8 @@ import Integrations from "./pages/Integrations";
 import Reporting from "./pages/Reporting";
 import Scalability from "./pages/Scalability";
 import AdminCommand from "./pages/AdminCommand";
+import Templates from "./pages/Templates";
+import Webhooks from "./pages/Webhooks";
 
 function DashboardRouter() {
   return (
@@ -51,6 +53,8 @@ function DashboardRouter() {
         <Route path="/dashboard/reporting" component={Reporting} />
         <Route path="/dashboard/scalability" component={Scalability} />
         <Route path="/dashboard/admin" component={AdminCommand} />
+        <Route path="/dashboard/templates" component={Templates} />
+        <Route path="/dashboard/webhooks" component={Webhooks} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

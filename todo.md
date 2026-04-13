@@ -88,38 +88,57 @@
 ## Phase 10: Feature Gap Framework
 
 ### P0 — AI & Intelligence (5 gaps)
-- [ ] Anomaly detection engine: flag unusual lead drop/spike patterns with alerts
-- [ ] Baseline regression tracker: compare current vs historical response/lead metrics
-- [ ] SLO threshold engine: define SLO targets per business, alert on breach
-- [ ] AI-powered reply suggestions: LLM suggests best reply based on conversation context
-- [ ] Smart lead scoring: auto-score leads based on engagement signals
+- [x] Anomaly detection engine: flag unusual lead drop/spike patterns with alerts
+- [x] Baseline regression tracker: compare current vs historical response/lead metrics
+- [x] SLO threshold engine: define SLO targets per business, alert on breach
+- [x] AI-powered reply suggestions: LLM suggests best reply based on conversation context
+- [x] Smart lead scoring: auto-score leads based on engagement signals
 
 ### P0 — Admin & Operations (6 gaps)
-- [ ] Command Central: super-admin panel (all tenants, revenue, usage, health)
-- [ ] Coupon/promo engine: create discount codes, apply to Stripe checkout
-- [ ] Pricing management: admin can change plan limits, prices without redeploy
-- [ ] Tenant health monitor: per-business WhatsApp status, message queue, error rate
-- [ ] Bulk operations: bulk assign/delete leads, bulk broadcast, bulk contact import
-- [ ] Audit log viewer: full activity trail per business with filters
+- [x] Command Central: super-admin panel (all tenants, revenue, usage, health)
+- [x] Coupon/promo engine: create discount codes, apply to Stripe checkout
+- [x] Pricing management: admin can change plan limits, prices without redeploy
+- [x] Tenant health monitor: per-business WhatsApp status, message queue, error rate
+- [x] Bulk operations: bulk assign/delete leads, bulk broadcast, bulk contact import
+- [x] Audit log viewer: full activity trail per business with filters
 
 ### P1 — Test Configuration (4 gaps)
-- [ ] Postman collection import: paste JSON, auto-create conversation flow
-- [ ] OpenAPI/YAML import: parse API spec, generate test scenarios
-- [ ] Multi-region support: tag contacts/broadcasts by region, filter by geography
-- [ ] Scripted scenarios: write JS-like condition scripts for advanced flow branching
+- [x] Postman collection import: paste JSON, auto-create conversation flow
+- [x] OpenAPI/YAML import: parse API spec, generate test scenarios
+- [x] Multi-region support: tag contacts/broadcasts by region, filter by geography
+- [x] Scripted scenarios: write JS-like condition scripts for advanced flow branching
 
 ### P1 — Reporting & Collaboration (4 gaps)
-- [ ] Shareable report links: generate public read-only link for analytics/lead reports
-- [ ] PDF export: export lead reports, conversation summaries, analytics to PDF
-- [ ] Team comments: add internal notes/comments on leads and conversations
-- [ ] Scheduled reports: auto-email weekly/monthly summary to business owner
+- [x] Shareable report links: generate public read-only link for analytics/lead reports
+- [x] PDF export: export lead reports, conversation summaries, analytics to PDF
+- [x] Team comments: add internal notes/comments on leads and conversations
+- [x] Scheduled reports: auto-email weekly/monthly summary to business owner
 
 ### P2 — Integrations (3 gaps)
-- [ ] Jira integration: create Jira ticket from lead/conversation with one click
-- [ ] PagerDuty integration: trigger PagerDuty incident on SLO breach or anomaly
-- [ ] Datadog metrics push: push lead/message/response metrics to Datadog
+- [x] Jira integration: create Jira ticket from lead/conversation with one click
+- [x] PagerDuty integration: trigger PagerDuty incident on SLO breach or anomaly
+- [x] Datadog metrics push: push lead/message/response metrics to Datadog
 
 ### P2 — Scalability (3 gaps)
-- [ ] Distributed agent architecture: UI for managing multiple WhatsApp numbers per business
-- [ ] Geo-distribution: assign contacts to regional agents based on phone prefix
-- [ ] Message queue dashboard: view pending/failed message queue with retry controls
+- [x] Distributed agent architecture: UI for managing multiple WhatsApp numbers per business
+- [x] Geo-distribution: assign contacts to regional agents based on phone prefix
+- [x] Message queue dashboard: view pending/failed message queue with retry controls
+
+## Phase 11: Trial Banner, Template Manager, Public API
+
+- [x] DB: whatsapp_templates table (name, category, language, body, status, meta_template_id)
+- [x] DB: webhook_endpoints table (businessId, url, events JSON, secret, isActive)
+- [x] DB: webhook_deliveries table (endpointId, event, payload, status, attempts)
+- [x] Trial countdown banner component (dismissible, shows days left, Upgrade CTA)
+- [x] Banner wired into AppLayout with subscription-aware logic (hide if paid)
+- [x] WhatsApp Template Manager page (/dashboard/templates)
+- [x] Template create/edit form (name, category, language, body with variable placeholders)
+- [x] Template status tracking (pending/approved/rejected)
+- [x] Template Manager added to sidebar under Platform
+- [x] Public API: POST /api/public/leads (widget token auth)
+- [x] Public API: GET /api/public/health
+- [x] Webhook endpoints router (list, create, delete, test)
+- [x] Outbound webhook event system (fires on lead created/updated, conversation started)
+- [x] Webhook delivery log UI in Integrations page
+- [x] 24 tests passing, zero TypeScript errors
+- [x] Checkpoint saved and pushed to GitHub

@@ -552,3 +552,66 @@ export const whatsappAgents = mysqlTable("whatsapp_agents", {
 });
 
 export type WhatsappAgent = typeof whatsappAgents.$inferSelect;
+
+// ─── WhatsApp Message Templates (HSM) ────────────────────────────────────────
+
+export const whatsappTemplates = mysqlTable("whatsapp_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  businessId: int("businessId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: mysqlEnum("category", ["MARKETING", "UTILITY", "AUTHENTICATION"]).notNull().default("MARKETING"),
+  language: varchar("language", { length: 10 }).notNull().default("en"),
+  headerType: mysqlEnum("headerType", ["none", "text", "image", "video", "document"]).default("none"),
+  headerContent: text("headerContent"),
+  body: text("body").notNull(),
+  footer: varchar("footer", { length: 60 }),
+  buttons: json("buttons").$type<{ type: string; text: string; url?: string; phone?: string }[]>(),
+  variables: json("variables").$type<string[]>().default([]),
+  status: mysqlEnum("status", ["draft", "pending", "approved", "rejected", "paused"]).notNull().default("draft"),
+  metaTemplateId: varchar("metaTemplateId", { length: 100 }),
+  rejectionReason: text("rejectionReason"),
+  submittedAt: timestamp("submittedAt"),
+  approvedAt: timestamp("approvedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WhatsappTemplate = typeof whatsappTemplates.$inferSelect;
+export type InsertWhatsappTemplate = typeof whatsappTemplates.$inferInsert;
+
+// ─── Webhook Endpoints ────────────────────────────────────────────────────────
+
+export const webhookEndpoints = mysqlTable("webhook_endpoints", {
+  id: int("id").autoincrement().primaryKey(),
+  businessId: int("businessId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  url: varchar("url", { length: 2000 }).notNull(),
+  secret: varchar("secret", { length: 64 }).notNull(),
+  events: json("events").$type<string[]>().notNull().default([]),
+  isActive: tinyint("isActive").notNull().default(1),
+  lastTriggeredAt: timestamp("lastTriggeredAt"),
+  successCount: int("successCount").notNull().default(0),
+  failureCount: int("failureCount").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type WebhookEndpoint = typeof webhookEndpoints.$inferSelect;
+export type InsertWebhookEndpoint = typeof webhookEndpoints.$inferInsert;
+
+// ─── Webhook Deliveries ───────────────────────────────────────────────────────
+
+export const webhookDeliveries = mysqlTable("webhook_deliveries", {
+  id: int("id").autoincrement().primaryKey(),
+  endpointId: int("endpointId").notNull(),
+  businessId: int("businessId").notNull(),
+  event: varchar("event", { length: 100 }).notNull(),
+  payload: json("payload"),
+  status: mysqlEnum("status", ["pending", "success", "failed"]).notNull().default("pending"),
+  statusCode: int("statusCode"),
+  responseBody: text("responseBody"),
+  attempts: int("attempts").notNull().default(0),
+  lastAttemptAt: timestamp("lastAttemptAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;

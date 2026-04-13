@@ -10,8 +10,10 @@ import {
   MessageSquare, LayoutDashboard, Users, MessageCircle, Bot,
   Zap, Megaphone, BarChart3, Settings, LogOut, ChevronLeft,
   ChevronRight, HelpCircle, Wifi, WifiOff, Menu, X, GitBranch,
-  Globe, UserPlus, CreditCard, Brain, Plug, FileText, Server, Shield
+  Globe, UserPlus, CreditCard, Brain, Plug, FileText, Server, Shield,
+  Webhook, LayoutTemplate
 } from "lucide-react";
+import TrialBanner from "./TrialBanner";
 
 const navGroups = [
   {
@@ -45,6 +47,8 @@ const navGroups = [
     items: [
       { path: "/dashboard/whatsapp", icon: <MessageSquare className="w-4 h-4" />, label: "WhatsApp" },
       { path: "/dashboard/widget", icon: <Globe className="w-4 h-4" />, label: "Widget" },
+      { path: "/dashboard/templates", icon: <LayoutTemplate className="w-4 h-4" />, label: "Templates" },
+      { path: "/dashboard/webhooks", icon: <Webhook className="w-4 h-4" />, label: "Webhooks" },
       { path: "/dashboard/integrations", icon: <Plug className="w-4 h-4" />, label: "Integrations" },
       { path: "/dashboard/scalability", icon: <Server className="w-4 h-4" />, label: "Scalability" },
     ],
@@ -239,6 +243,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </div>
         </header>
 
+        {/* Trial countdown banner */}
+        <TrialBanner />
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
           {children}
