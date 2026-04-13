@@ -84,3 +84,42 @@
 - [x] Pricing page with Stripe Checkout redirect
 - [x] Subscription management page (upgrade/downgrade/cancel)
 - [x] Plan limits UI (usage bars, upgrade prompts)
+
+## Phase 10: Feature Gap Framework
+
+### P0 — AI & Intelligence (5 gaps)
+- [ ] Anomaly detection engine: flag unusual lead drop/spike patterns with alerts
+- [ ] Baseline regression tracker: compare current vs historical response/lead metrics
+- [ ] SLO threshold engine: define SLO targets per business, alert on breach
+- [ ] AI-powered reply suggestions: LLM suggests best reply based on conversation context
+- [ ] Smart lead scoring: auto-score leads based on engagement signals
+
+### P0 — Admin & Operations (6 gaps)
+- [ ] Command Central: super-admin panel (all tenants, revenue, usage, health)
+- [ ] Coupon/promo engine: create discount codes, apply to Stripe checkout
+- [ ] Pricing management: admin can change plan limits, prices without redeploy
+- [ ] Tenant health monitor: per-business WhatsApp status, message queue, error rate
+- [ ] Bulk operations: bulk assign/delete leads, bulk broadcast, bulk contact import
+- [ ] Audit log viewer: full activity trail per business with filters
+
+### P1 — Test Configuration (4 gaps)
+- [ ] Postman collection import: paste JSON, auto-create conversation flow
+- [ ] OpenAPI/YAML import: parse API spec, generate test scenarios
+- [ ] Multi-region support: tag contacts/broadcasts by region, filter by geography
+- [ ] Scripted scenarios: write JS-like condition scripts for advanced flow branching
+
+### P1 — Reporting & Collaboration (4 gaps)
+- [ ] Shareable report links: generate public read-only link for analytics/lead reports
+- [ ] PDF export: export lead reports, conversation summaries, analytics to PDF
+- [ ] Team comments: add internal notes/comments on leads and conversations
+- [ ] Scheduled reports: auto-email weekly/monthly summary to business owner
+
+### P2 — Integrations (3 gaps)
+- [ ] Jira integration: create Jira ticket from lead/conversation with one click
+- [ ] PagerDuty integration: trigger PagerDuty incident on SLO breach or anomaly
+- [ ] Datadog metrics push: push lead/message/response metrics to Datadog
+
+### P2 — Scalability (3 gaps)
+- [ ] Distributed agent architecture: UI for managing multiple WhatsApp numbers per business
+- [ ] Geo-distribution: assign contacts to regional agents based on phone prefix
+- [ ] Message queue dashboard: view pending/failed message queue with retry controls

@@ -1,5 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { COOKIE_NAME } from "@shared/const";
+import { desc, gte, sql } from "drizzle-orm";
+import { getDb } from "./db";
+import { agentsRouter, aiRouter, anomalyRouter, couponsRouter, integrationsRouter, leadCommentsRouter, scheduledReportsRouter, sharedReportsRouter, sloRouter } from "./routers-gaps";
 import { SignJWT } from "jose";
 import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -980,11 +983,24 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 
 const adminRouter = router({
   stats: adminProcedure.query(async () => {
+    const dbConn = await getDb();
     const [totalBusinesses, totalUsers] = await Promise.all([
       db.getBusinessesCount(),
       db.getUsersCount(),
     ]);
-    return { totalBusinesses, totalUsers };
+    let totalLeads = 0;
+    let activeThisMonth = 0;
+    let recentBusinesses: Array<{ id: number; name: string; plan: string; industry: string | null; createdAt: Date }> = [];
+    if (dbConn) {
+      const { leads, businesses } = await import("../drizzle/schema");
+      const [leadsRow] = await dbConn.select({ count: sql<number>`count(*)` }).from(leads);
+      totalLeads = Number(leadsRow?.count ?? 0);
+      const monthAgo = new Date(Date.now() - 30 * 24 * 3600 * 1000);
+      const [activeRow] = await dbConn.select({ count: sql<number>`count(*)` }).from(businesses).where(gte(businesses.createdAt, monthAgo));
+      activeThisMonth = Number(activeRow?.count ?? 0);
+      recentBusinesses = await dbConn.select({ id: businesses.id, name: businesses.name, plan: businesses.plan, industry: businesses.industry, createdAt: businesses.createdAt }).from(businesses).orderBy(desc(businesses.createdAt)).limit(20);
+    }
+    return { totalBusinesses, totalUsers, totalLeads, activeThisMonth, recentBusinesses };
   }),
 
   businesses: adminProcedure
@@ -1023,6 +1039,15 @@ export const appRouter = router({
   broadcast: broadcastRouter,
   analytics: analyticsRouter,
   leadForms: leadFormsRouter,
+  slo: sloRouter,
+  anomaly: anomalyRouter,
+  ai: aiRouter,
+  coupons: couponsRouter,
+  leadComments: leadCommentsRouter,
+  sharedReports: sharedReportsRouter,
+  scheduledReports: scheduledReportsRouter,
+  integrations: integrationsRouter,
+  agents: agentsRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -22,6 +22,11 @@ import Onboarding from "./pages/Onboarding";
 import Widget from "./pages/Widget";
 import Team from "./pages/Team";
 import Billing from "./pages/Billing";
+import Intelligence from "./pages/Intelligence";
+import Integrations from "./pages/Integrations";
+import Reporting from "./pages/Reporting";
+import Scalability from "./pages/Scalability";
+import AdminCommand from "./pages/AdminCommand";
 
 function DashboardRouter() {
   return (
@@ -41,6 +46,11 @@ function DashboardRouter() {
         <Route path="/dashboard/widget" component={Widget} />
         <Route path="/dashboard/team" component={Team} />
         <Route path="/dashboard/billing" component={Billing} />
+        <Route path="/dashboard/intelligence" component={Intelligence} />
+        <Route path="/dashboard/integrations" component={Integrations} />
+        <Route path="/dashboard/reporting" component={Reporting} />
+        <Route path="/dashboard/scalability" component={Scalability} />
+        <Route path="/dashboard/admin" component={AdminCommand} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

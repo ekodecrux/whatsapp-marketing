@@ -8,6 +8,7 @@ import {
   timestamp,
   varchar,
   bigint,
+  tinyint,
 } from "drizzle-orm/mysql-core";
 
 // ─── Users & Auth ────────────────────────────────────────────────────────────
@@ -410,3 +411,144 @@ export const activityLogs = mysqlTable("activity_logs", {
 });
 
 export type ActivityLog = typeof activityLogs.$inferSelect;
+
+// ─── SLO Thresholds ───────────────────────────────────────────────────────────
+
+export const sloThresholds = mysqlTable("slo_thresholds", {
+  id: int("id").autoincrement().primaryKey(),
+  businessId: int("businessId").notNull(),
+  metric: varchar("metric", { length: 100 }).notNull(), // e.g. "response_rate", "lead_conversion", "reply_time_seconds"
+  operator: mysqlEnum("operator", ["lt", "gt", "lte", "gte"]).notNull().default("lt"),
+  threshold: int("threshold").notNull(),
+  windowHours: int("windowHours").notNull().default(24),
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).notNull().default("warning"),
+  isActive: tinyint("isActive").notNull().default(1),
+  lastBreachedAt: timestamp("lastBreachedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SloThreshold = typeof sloThresholds.$inferSelect;
+export type InsertSloThreshold = typeof sloThresholds.$inferInsert;
+
+// ─── Anomaly Events ───────────────────────────────────────────────────────────
+
+export const anomalyEvents = mysqlTable("anomaly_events", {
+  id: int("id").autoincrement().primaryKey(),
+  businessId: int("businessId").notNull(),
+  metric: varchar("metric", { length: 100 }).notNull(),
+  detectedValue: int("detectedValue").notNull(),
+  baselineValue: int("baselineValue").notNull(),
+  deviationPct: int("deviationPct").notNull(), // stored as integer percentage
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).notNull().default("warning"),
+  description: text("description"),
+  isResolved: tinyint("isResolved").notNull().default(0),
+  resolvedAt: timestamp("resolvedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AnomalyEvent = typeof anomalyEvents.$inferSelect;
+
+// ─── Coupons ──────────────────────────────────────────────────────────────────
+
+export const coupons = mysqlTable("coupons", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  description: text("description"),
+  discountType: mysqlEnum("discountType", ["percent", "fixed"]).notNull().default("percent"),
+  discountValue: int("discountValue").notNull(), // percent 0-100 or fixed paise
+  maxUses: int("maxUses"),
+  usedCount: int("usedCount").notNull().default(0),
+  validFrom: timestamp("validFrom"),
+  validUntil: timestamp("validUntil"),
+  applicablePlans: json("applicablePlans").$type<string[]>().default([]),
+  isActive: tinyint("isActive").notNull().default(1),
+  createdBy: int("createdBy"), // admin userId
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Coupon = typeof coupons.$inferSelect;
+export type InsertCoupon = typeof coupons.$inferInsert;
+
+// ─── Lead Comments ────────────────────────────────────────────────────────────
+
+export const leadComments = mysqlTable("lead_comments", {
+  id: int("id").autoincrement().primaryKey(),
+  leadId: int("leadId").notNull(),
+  businessId: int("businessId").notNull(),
+  userId: int("userId").notNull(),
+  userName: varchar("userName", { length: 255 }),
+  content: text("content").notNull(),
+  isInternal: tinyint("isInternal").notNull().default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LeadComment = typeof leadComments.$inferSelect;
+export type InsertLeadComment = typeof leadComments.$inferInsert;
+
+// ─── Shared Reports ───────────────────────────────────────────────────────────
+
+export const sharedReports = mysqlTable("shared_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  businessId: int("businessId").notNull(),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  reportType: mysqlEnum("reportType", ["analytics", "leads", "conversations", "broadcast"]).notNull(),
+  title: varchar("title", { length: 255 }),
+  filters: json("filters").$type<Record<string, unknown>>().default({}),
+  expiresAt: timestamp("expiresAt"),
+  viewCount: int("viewCount").notNull().default(0),
+  createdBy: int("createdBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SharedReport = typeof sharedReports.$inferSelect;
+
+// ─── Integration Configs ──────────────────────────────────────────────────────
+
+export const integrationConfigs = mysqlTable("integration_configs", {
+  id: int("id").autoincrement().primaryKey(),
+  businessId: int("businessId").notNull(),
+  provider: mysqlEnum("provider", ["jira", "pagerduty", "datadog", "slack", "zapier"]).notNull(),
+  config: json("config").$type<Record<string, unknown>>().notNull().default({}),
+  isActive: tinyint("isActive").notNull().default(1),
+  lastSyncAt: timestamp("lastSyncAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type IntegrationConfig = typeof integrationConfigs.$inferSelect;
+
+// ─── Scheduled Reports ────────────────────────────────────────────────────────
+
+export const scheduledReports = mysqlTable("scheduled_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  businessId: int("businessId").notNull(),
+  reportType: mysqlEnum("reportType", ["analytics", "leads", "conversations", "broadcast"]).notNull(),
+  frequency: mysqlEnum("frequency", ["daily", "weekly", "monthly"]).notNull().default("weekly"),
+  recipientEmails: json("recipientEmails").$type<string[]>().notNull().default([]),
+  isActive: tinyint("isActive").notNull().default(1),
+  lastSentAt: timestamp("lastSentAt"),
+  nextSendAt: timestamp("nextSendAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ScheduledReport = typeof scheduledReports.$inferSelect;
+
+// ─── WhatsApp Agents (Multi-number) ───────────────────────────────────────────
+
+export const whatsappAgents = mysqlTable("whatsapp_agents", {
+  id: int("id").autoincrement().primaryKey(),
+  businessId: int("businessId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  phoneNumberId: varchar("phoneNumberId", { length: 100 }),
+  accessToken: text("accessToken"),
+  region: varchar("region", { length: 50 }), // e.g. "north", "south", "mumbai"
+  phonePrefixes: json("phonePrefixes").$type<string[]>().default([]), // e.g. ["+9198", "+9199"]
+  isActive: tinyint("isActive").notNull().default(1),
+  messagesSent: int("messagesSent").notNull().default(0),
+  lastActiveAt: timestamp("lastActiveAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type WhatsappAgent = typeof whatsappAgents.$inferSelect;

@@ -10,25 +10,57 @@ import {
   MessageSquare, LayoutDashboard, Users, MessageCircle, Bot,
   Zap, Megaphone, BarChart3, Settings, LogOut, ChevronLeft,
   ChevronRight, HelpCircle, Wifi, WifiOff, Menu, X, GitBranch,
-  Globe, UserPlus, CreditCard
+  Globe, UserPlus, CreditCard, Brain, Plug, FileText, Server, Shield
 } from "lucide-react";
 
-const navItems = [
-  { path: "/dashboard", icon: <LayoutDashboard className="w-5 h-5" />, label: "Dashboard" },
-  { path: "/dashboard/conversations", icon: <MessageCircle className="w-5 h-5" />, label: "Conversations" },
-  { path: "/dashboard/leads", icon: <Users className="w-5 h-5" />, label: "Leads" },
-  { path: "/dashboard/contacts", icon: <Users className="w-5 h-5" />, label: "Contacts" },
-  { path: "/dashboard/auto-reply", icon: <Zap className="w-5 h-5" />, label: "Auto-Reply" },
-  { path: "/dashboard/faq-bot", icon: <Bot className="w-5 h-5" />, label: "FAQ Bot" },
-  { path: "/dashboard/flows", icon: <GitBranch className="w-5 h-5" />, label: "Flows" },
-  { path: "/dashboard/broadcast", icon: <Megaphone className="w-5 h-5" />, label: "Broadcast" },
-  { path: "/dashboard/analytics", icon: <BarChart3 className="w-5 h-5" />, label: "Analytics" },
-  { path: "/dashboard/whatsapp", icon: <MessageSquare className="w-5 h-5" />, label: "WhatsApp" },
-  { path: "/dashboard/widget", icon: <Globe className="w-5 h-5" />, label: "Widget" },
-  { path: "/dashboard/team", icon: <UserPlus className="w-5 h-5" />, label: "Team" },
-  { path: "/dashboard/billing", icon: <CreditCard className="w-5 h-5" />, label: "Billing" },
-  { path: "/dashboard/settings", icon: <Settings className="w-5 h-5" />, label: "Settings" },
+const navGroups = [
+  {
+    label: "Core",
+    items: [
+      { path: "/dashboard", icon: <LayoutDashboard className="w-4 h-4" />, label: "Dashboard" },
+      { path: "/dashboard/conversations", icon: <MessageCircle className="w-4 h-4" />, label: "Conversations" },
+      { path: "/dashboard/leads", icon: <Users className="w-4 h-4" />, label: "Leads" },
+      { path: "/dashboard/contacts", icon: <Users className="w-4 h-4" />, label: "Contacts" },
+    ],
+  },
+  {
+    label: "Automation",
+    items: [
+      { path: "/dashboard/auto-reply", icon: <Zap className="w-4 h-4" />, label: "Auto-Reply" },
+      { path: "/dashboard/faq-bot", icon: <Bot className="w-4 h-4" />, label: "FAQ Bot" },
+      { path: "/dashboard/flows", icon: <GitBranch className="w-4 h-4" />, label: "Flows" },
+      { path: "/dashboard/broadcast", icon: <Megaphone className="w-4 h-4" />, label: "Broadcast" },
+    ],
+  },
+  {
+    label: "Intelligence",
+    items: [
+      { path: "/dashboard/analytics", icon: <BarChart3 className="w-4 h-4" />, label: "Analytics" },
+      { path: "/dashboard/intelligence", icon: <Brain className="w-4 h-4" />, label: "AI Intelligence" },
+      { path: "/dashboard/reporting", icon: <FileText className="w-4 h-4" />, label: "Reporting" },
+    ],
+  },
+  {
+    label: "Platform",
+    items: [
+      { path: "/dashboard/whatsapp", icon: <MessageSquare className="w-4 h-4" />, label: "WhatsApp" },
+      { path: "/dashboard/widget", icon: <Globe className="w-4 h-4" />, label: "Widget" },
+      { path: "/dashboard/integrations", icon: <Plug className="w-4 h-4" />, label: "Integrations" },
+      { path: "/dashboard/scalability", icon: <Server className="w-4 h-4" />, label: "Scalability" },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { path: "/dashboard/team", icon: <UserPlus className="w-4 h-4" />, label: "Team" },
+      { path: "/dashboard/billing", icon: <CreditCard className="w-4 h-4" />, label: "Billing" },
+      { path: "/dashboard/admin", icon: <Shield className="w-4 h-4" />, label: "Admin" },
+      { path: "/dashboard/settings", icon: <Settings className="w-4 h-4" />, label: "Settings" },
+    ],
+  },
 ];
+// Flat list for mobile/collapsed use
+const navItems = navGroups.flatMap(g => g.items);
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -82,32 +114,54 @@ export default function AppLayout({ children }: AppLayoutProps) {
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-        {navItems.map((item) => {
-          const active = location === item.path || (item.path !== "/dashboard" && location.startsWith(item.path));
-          return collapsed ? (
-            <Tooltip key={item.path} delayDuration={0}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => { navigate(item.path); setMobileOpen(false); }}
-                  className={`w-full flex items-center justify-center p-2.5 rounded-lg transition-colors ${active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"}`}
-                >
-                  {item.icon}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">{item.label}</TooltipContent>
-            </Tooltip>
-          ) : (
-            <button
-              key={item.path}
-              onClick={() => { navigate(item.path); setMobileOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"}`}
-            >
-              <span className="flex-shrink-0">{item.icon}</span>
-              <span className="truncate">{item.label}</span>
-            </button>
-          );
-        })}
+      <nav className="flex-1 overflow-y-auto py-2 px-2">
+        {collapsed ? (
+          // Collapsed: flat icon list
+          <div className="space-y-0.5">
+            {navItems.map((item) => {
+              const active = location === item.path || (item.path !== "/dashboard" && location.startsWith(item.path));
+              return (
+                <Tooltip key={item.path} delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => { navigate(item.path); setMobileOpen(false); }}
+                      className={`w-full flex items-center justify-center p-2.5 rounded-lg transition-colors ${active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"}`}
+                    >
+                      {item.icon}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{item.label}</TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
+        ) : (
+          // Expanded: grouped sections
+          <div className="space-y-4">
+            {navGroups.map((group) => (
+              <div key={group.label}>
+                <div className="px-3 mb-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">{group.label}</span>
+                </div>
+                <div className="space-y-0.5">
+                  {group.items.map((item) => {
+                    const active = location === item.path || (item.path !== "/dashboard" && location.startsWith(item.path));
+                    return (
+                      <button
+                        key={item.path}
+                        onClick={() => { navigate(item.path); setMobileOpen(false); }}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"}`}
+                      >
+                        <span className="flex-shrink-0">{item.icon}</span>
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </nav>
 
       {/* User section */}
