@@ -3,14 +3,14 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   Code2, Copy, Plus, Trash2, Eye, Settings2, MessageCircle,
-  ExternalLink, CheckCircle2, Smartphone, Globe, Zap,
+  ExternalLink, CheckCircle2, Smartphone, Globe, Zap, Signal, Wifi, Battery,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 
@@ -21,6 +21,8 @@ interface WidgetConfig {
   buttonColor: string;
   position: "bottom-right" | "bottom-left";
   showAfterSeconds: number;
+  businessName?: string;
+  tagline?: string;
 }
 
 const DEFAULT_CONFIG: WidgetConfig = {
@@ -30,7 +32,135 @@ const DEFAULT_CONFIG: WidgetConfig = {
   buttonColor: "#25D366",
   position: "bottom-right",
   showAfterSeconds: 3,
+  businessName: "My Business",
+  tagline: "Typically replies within minutes",
 };
+
+// Mobile phone mockup with live widget preview inside
+function MobilePreview({ config }: { config: WidgetConfig }) {
+  const [popupOpen, setPopupOpen] = useState(true);
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      {/* Phone frame */}
+      <div
+        className="relative bg-slate-900 rounded-[2.5rem] shadow-2xl border-[6px] border-slate-800"
+        style={{ width: 260, height: 520 }}
+      >
+        {/* Notch */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-slate-900 rounded-b-2xl z-20 flex items-center justify-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-slate-700" />
+          <div className="w-12 h-1.5 rounded-full bg-slate-700" />
+        </div>
+
+        {/* Status bar */}
+        <div className="absolute top-7 left-0 right-0 flex items-center justify-between px-5 z-10">
+          <span className="text-white text-[9px] font-semibold">9:41</span>
+          <div className="flex items-center gap-1">
+            <Signal className="w-2.5 h-2.5 text-white" />
+            <Wifi className="w-2.5 h-2.5 text-white" />
+            <Battery className="w-3 h-3 text-white" />
+          </div>
+        </div>
+
+        {/* Screen content — fake website */}
+        <div className="absolute inset-0 rounded-[2rem] overflow-hidden bg-gray-50">
+          {/* Fake browser bar */}
+          <div className="bg-white border-b border-gray-200 pt-12 pb-2 px-3 flex items-center gap-2">
+            <div className="flex-1 bg-gray-100 rounded-full h-5 flex items-center px-2">
+              <span className="text-[8px] text-gray-400 truncate">www.yourbusiness.com</span>
+            </div>
+          </div>
+
+          {/* Fake page content */}
+          <div className="p-3 space-y-2 overflow-hidden">
+            <div className="h-16 bg-gradient-to-r from-emerald-100 to-teal-100 rounded-lg flex items-center justify-center">
+              <span className="text-[9px] font-bold text-emerald-700">Your Website Hero</span>
+            </div>
+            <div className="space-y-1.5">
+              <div className="h-2 bg-gray-200 rounded-full w-full" />
+              <div className="h-2 bg-gray-200 rounded-full w-4/5" />
+              <div className="h-2 bg-gray-200 rounded-full w-3/5" />
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-12 bg-gray-100 rounded-md" />
+              ))}
+            </div>
+            <div className="space-y-1">
+              <div className="h-2 bg-gray-200 rounded-full w-full" />
+              <div className="h-2 bg-gray-200 rounded-full w-3/4" />
+            </div>
+          </div>
+
+          {/* Widget overlay — popup card + bubble */}
+          <div
+            className={`absolute bottom-4 ${config.position === "bottom-right" ? "right-3" : "left-3"} flex flex-col items-${config.position === "bottom-right" ? "end" : "start"} gap-2`}
+          >
+            {/* Popup card */}
+            {popupOpen && (
+              <div className="bg-white rounded-xl shadow-xl border border-gray-100 w-44 overflow-hidden">
+                {/* WA header */}
+                <div className="flex items-center gap-2 px-3 py-2" style={{ backgroundColor: config.buttonColor }}>
+                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <MessageCircle className="w-3 h-3 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-white text-[9px] font-bold truncate">{config.businessName || "My Business"}</p>
+                    <p className="text-white/80 text-[7px]">● Online</p>
+                  </div>
+                  <button
+                    className="ml-auto text-white/70 hover:text-white text-[10px] leading-none"
+                    onClick={() => setPopupOpen(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+                {/* Chat bubble */}
+                <div className="p-2.5 bg-gray-50">
+                  <div className="bg-white rounded-lg rounded-tl-none p-2 shadow-sm border border-gray-100">
+                    <p className="text-[8px] text-gray-700 leading-relaxed">{config.welcomeMessage}</p>
+                    <p className="text-[7px] text-gray-400 mt-1 text-right">12:00 PM ✓✓</p>
+                  </div>
+                </div>
+                {/* CTA button */}
+                <div className="px-2.5 pb-2.5">
+                  <button
+                    className="w-full text-white text-[8px] font-bold py-1.5 px-2 rounded-lg flex items-center justify-center gap-1"
+                    style={{ backgroundColor: config.buttonColor }}
+                  >
+                    <MessageCircle className="w-2.5 h-2.5" />
+                    {config.buttonText}
+                  </button>
+                  <p className="text-[7px] text-gray-400 text-center mt-1">{config.tagline}</p>
+                </div>
+              </div>
+            )}
+
+            {/* FAB bubble */}
+            <button
+              className="w-11 h-11 rounded-full shadow-lg flex items-center justify-center relative"
+              style={{ backgroundColor: config.buttonColor }}
+              onClick={() => setPopupOpen(!popupOpen)}
+            >
+              <MessageCircle className="w-5 h-5 text-white" />
+              {!popupOpen && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full text-white text-[7px] flex items-center justify-center font-bold">1</span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Home indicator */}
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-20 h-1 bg-white/30 rounded-full" />
+      </div>
+
+      <p className="text-xs text-muted-foreground text-center">
+        Tap the bubble to toggle the popup preview
+      </p>
+    </div>
+  );
+}
 
 export default function Widget() {
   const [createOpen, setCreateOpen] = useState(false);
@@ -38,6 +168,7 @@ export default function Widget() {
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [config, setConfig] = useState<WidgetConfig>(DEFAULT_CONFIG);
+  const [activeTab, setActiveTab] = useState("configure");
 
   const { data: widgets = [], refetch } = trpc.widget.list.useQuery();
   const createWidget = trpc.widget.create.useMutation();
@@ -84,36 +215,6 @@ export default function Widget() {
       toast.success("Snippet copied to clipboard!");
     }
   }
-
-  // Live preview bubble
-  const previewBubble = (
-    <div className={`relative flex flex-col items-${config.position === "bottom-right" ? "end" : "start"} gap-3`}>
-      <div className="bg-white rounded-2xl shadow-xl p-4 max-w-[240px] border border-gray-100">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: config.buttonColor }}>
-            <MessageCircle className="h-4 w-4 text-white" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-gray-800">WhatsApp</p>
-            <p className="text-[10px] text-green-500">● Online</p>
-          </div>
-        </div>
-        <p className="text-xs text-gray-600 mb-3">{config.welcomeMessage}</p>
-        <button
-          className="w-full text-xs text-white font-semibold py-2 px-3 rounded-xl"
-          style={{ backgroundColor: config.buttonColor }}
-        >
-          {config.buttonText}
-        </button>
-      </div>
-      <div
-        className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg cursor-pointer"
-        style={{ backgroundColor: config.buttonColor }}
-      >
-        <MessageCircle className="h-7 w-7 text-white" />
-      </div>
-    </div>
-  );
 
   return (
     <AppLayout>
@@ -226,20 +327,32 @@ export default function Widget() {
 
         {/* Create Widget Dialog */}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create Lead Capture Widget</DialogTitle>
             </DialogHeader>
-            <Tabs defaultValue="configure">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="w-full">
                 <TabsTrigger value="configure" className="flex-1">Configure</TabsTrigger>
-                <TabsTrigger value="preview" className="flex-1">Preview</TabsTrigger>
+                <TabsTrigger value="preview" className="flex-1">
+                  <Smartphone className="h-3 w-3 mr-1.5" /> Mobile Preview
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="configure" className="space-y-4 pt-4">
-                <div className="space-y-1.5">
-                  <Label>Widget Name</Label>
-                  <Input placeholder="e.g. Homepage Widget" value={newName} onChange={(e) => setNewName(e.target.value)} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Widget Name</Label>
+                    <Input placeholder="e.g. Homepage Widget" value={newName} onChange={(e) => setNewName(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Business Name</Label>
+                    <Input
+                      placeholder="My Clinic / My Store"
+                      value={config.businessName || ""}
+                      onChange={(e) => setConfig({ ...config, businessName: e.target.value })}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label>WhatsApp Number <span className="text-red-500">*</span></Label>
@@ -258,13 +371,23 @@ export default function Widget() {
                     onChange={(e) => setConfig({ ...config, welcomeMessage: e.target.value })}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Button Text</Label>
-                  <Input
-                    placeholder="Chat with us"
-                    value={config.buttonText}
-                    onChange={(e) => setConfig({ ...config, buttonText: e.target.value })}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Button Text</Label>
+                    <Input
+                      placeholder="Chat with us"
+                      value={config.buttonText}
+                      onChange={(e) => setConfig({ ...config, buttonText: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Tagline</Label>
+                    <Input
+                      placeholder="Typically replies within minutes"
+                      value={config.tagline || ""}
+                      onChange={(e) => setConfig({ ...config, tagline: e.target.value })}
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -305,26 +428,72 @@ export default function Widget() {
                     onChange={(e) => setConfig({ ...config, showAfterSeconds: parseInt(e.target.value) || 0 })}
                   />
                 </div>
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setActiveTab("preview")}
+                    className="text-emerald-600 border-emerald-300 hover:bg-emerald-50"
+                  >
+                    <Smartphone className="h-3.5 w-3.5 mr-1.5" /> See Mobile Preview →
+                  </Button>
+                </div>
               </TabsContent>
 
               <TabsContent value="preview" className="pt-4">
-                <div className="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 rounded-xl p-8 min-h-[300px] flex items-end justify-end relative overflow-hidden">
-                  {/* Fake website background */}
-                  <div className="absolute inset-0 opacity-20">
-                    <div className="h-12 bg-gray-400 mx-4 mt-4 rounded" />
-                    <div className="h-4 bg-gray-300 mx-4 mt-3 rounded w-3/4" />
-                    <div className="h-4 bg-gray-300 mx-4 mt-2 rounded w-1/2" />
-                    <div className="grid grid-cols-3 gap-2 mx-4 mt-4">
-                      {[1,2,3].map(i => <div key={i} className="h-20 bg-gray-300 rounded" />)}
+                <div className="flex flex-col md:flex-row gap-8 items-start justify-center">
+                  {/* Phone mockup */}
+                  <MobilePreview config={config} />
+
+                  {/* Summary panel */}
+                  <div className="flex-1 space-y-4">
+                    <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                      <h3 className="font-semibold text-sm text-emerald-800 dark:text-emerald-200 mb-3">Widget Summary</h3>
+                      <div className="space-y-2 text-xs">
+                        {[
+                          { label: "Business Name", value: config.businessName || "—" },
+                          { label: "WhatsApp Number", value: config.waNumber || "Not set" },
+                          { label: "Button Text", value: config.buttonText },
+                          { label: "Position", value: config.position === "bottom-right" ? "Bottom Right" : "Bottom Left" },
+                          { label: "Show After", value: `${config.showAfterSeconds}s` },
+                        ].map((row) => (
+                          <div key={row.label} className="flex justify-between">
+                            <span className="text-muted-foreground">{row.label}</span>
+                            <span className="font-medium text-foreground">{row.value}</span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Button Color</span>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-4 h-4 rounded-full border border-gray-200" style={{ backgroundColor: config.buttonColor }} />
+                            <span className="font-mono font-medium">{config.buttonColor}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="relative z-10 p-4">
-                    {previewBubble}
+
+                    <div className="p-4 bg-muted/40 rounded-xl space-y-2">
+                      <h3 className="font-semibold text-sm mb-2">Works on all devices</h3>
+                      <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                        {["WordPress", "Wix / Squarespace", "React / Next.js", "Shopify", "Any HTML site", "Mobile & Desktop"].map((p) => (
+                          <div key={p} className="flex items-center gap-1.5">
+                            <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+                            {p}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setActiveTab("configure")}
+                      className="w-full"
+                    >
+                      ← Back to Configure
+                    </Button>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground text-center mt-3">
-                  This is how the widget will appear on your website.
-                </p>
               </TabsContent>
             </Tabs>
 
@@ -391,10 +560,7 @@ export default function Widget() {
               </div>
 
               <div className="flex gap-2">
-                <Button
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                  onClick={copySnippet}
-                >
+                <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={copySnippet}>
                   <Copy className="h-4 w-4 mr-2" /> Copy Snippet
                 </Button>
                 <Button

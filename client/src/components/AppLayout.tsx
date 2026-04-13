@@ -78,6 +78,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { data: user } = trpc.auth.me.useQuery();
   const { data: business } = trpc.business.get.useQuery();
   const { data: waConfig } = trpc.whatsapp.getConfig.useQuery();
+
+  // Real-time unread message badge — polls every 30 seconds
+  const { data: unreadCount = 0 } = trpc.conversations.unreadCount.useQuery(undefined, {
+    refetchInterval: 30_000,
+    enabled: !!user,
+  });
   const logout = trpc.auth.logout.useMutation({
     onSuccess: () => { navigate("/login"); toast.success("Signed out"); },
   });
@@ -124,17 +130,23 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <div className="space-y-0.5">
             {navItems.map((item) => {
               const active = location === item.path || (item.path !== "/dashboard" && location.startsWith(item.path));
+              const isConversations = item.path === "/dashboard/conversations";
               return (
                 <Tooltip key={item.path} delayDuration={0}>
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => { navigate(item.path); setMobileOpen(false); }}
-                      className={`w-full flex items-center justify-center p-2.5 rounded-lg transition-colors ${active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"}`}
+                      className={`w-full flex items-center justify-center p-2.5 rounded-lg transition-colors relative ${active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"}`}
                     >
                       {item.icon}
+                      {isConversations && unreadCount > 0 && (
+                        <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1">
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                      )}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="right">{item.label}</TooltipContent>
+                  <TooltipContent side="right">{item.label}{isConversations && unreadCount > 0 ? ` (${unreadCount} unread)` : ""}</TooltipContent>
                 </Tooltip>
               );
             })}
@@ -150,6 +162,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 <div className="space-y-0.5">
                   {group.items.map((item) => {
                     const active = location === item.path || (item.path !== "/dashboard" && location.startsWith(item.path));
+                    const isConversations = item.path === "/dashboard/conversations";
                     return (
                       <button
                         key={item.path}
@@ -157,7 +170,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
                         className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"}`}
                       >
                         <span className="flex-shrink-0">{item.icon}</span>
-                        <span className="truncate">{item.label}</span>
+                        <span className="truncate flex-1 text-left">{item.label}</span>
+                        {isConversations && unreadCount > 0 && (
+                          <span className="min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1.5 flex-shrink-0">
+                            {unreadCount > 99 ? "99+" : unreadCount}
+                          </span>
+                        )}
                       </button>
                     );
                   })}

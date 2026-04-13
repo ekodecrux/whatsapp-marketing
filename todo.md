@@ -142,3 +142,12 @@
 - [x] Webhook delivery log UI in Integrations page
 - [x] 24 tests passing, zero TypeScript errors
 - [x] Checkpoint saved and pushed to GitHub
+
+## Phase 12: Final Features + User Guide
+- [x] Mobile WhatsApp chat preview frame on Widget page (phone mockup, live preview)
+- [x] CSV contact import on Contacts page (upload, column mapping, bulk insert)
+- [x] Real-time unread badge on Conversations nav (30s polling, auto-clear on visit)
+- [x] Comprehensive user guide (Markdown + PDF, all features documented)
+- [x] DB schema SQL export file committed to GitHub
+- [x] GitHub push with all new code
+- [x] Checkpoint saved

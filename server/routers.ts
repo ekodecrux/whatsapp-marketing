@@ -228,6 +228,50 @@ const contactsRouter = router({
     if (!business) return 0;
     return db.getContactsCount(business.id);
   }),
+
+  bulkImport: protectedProcedure
+    .input(z.object({
+      contacts: z.array(z.object({
+        waId: z.string().min(1),
+        name: z.string().optional(),
+        email: z.string().email().optional().or(z.literal("")),
+        tags: z.array(z.string()).optional(),
+        notes: z.string().optional(),
+      }))
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const business = await db.getBusinessByOwner(ctx.user.id);
+      if (!business) throw new TRPCError({ code: "NOT_FOUND" });
+      const dbInstance = await getDb();
+      if (!dbInstance) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const { contacts: contactsTable } = await import("../drizzle/schema");
+      let imported = 0;
+      let skipped = 0;
+      for (const c of input.contacts) {
+        try {
+          const waId = c.waId.replace(/\D/g, "");
+          if (!waId) { skipped++; continue; }
+          await dbInstance.insert(contactsTable).values({
+            businessId: business.id,
+            waId,
+            name: c.name || null,
+            email: c.email || null,
+            tags: c.tags || null,
+            notes: c.notes || null,
+            isBlocked: false,
+          }).onDuplicateKeyUpdate({
+            set: {
+              name: c.name || undefined,
+              email: c.email || undefined,
+            }
+          });
+          imported++;
+        } catch {
+          skipped++;
+        }
+      }
+      return { imported, skipped, total: input.contacts.length };
+    }),
 });
 
 // ─── Conversations Router ─────────────────────────────────────────────────────
@@ -319,6 +363,21 @@ const conversationsRouter = router({
       await db.updateConversation(input.id, { status: input.status });
       return { success: true };
     }),
+
+  // Returns count of open conversations with unread messages (polls every 30s from sidebar)
+  unreadCount: protectedProcedure.query(async ({ ctx }) => {
+    const business = await db.getBusinessByOwner(ctx.user.id);
+    if (!business) return 0;
+    const dbInstance = await getDb();
+    if (!dbInstance) return 0;
+    const { conversations } = await import("../drizzle/schema");
+    const { eq, and } = await import("drizzle-orm");
+    const result = await dbInstance
+      .select({ count: sql<number>`count(*)` })
+      .from(conversations)
+      .where(and(eq(conversations.businessId, business.id), eq(conversations.status, "open")));
+    return Number(result[0]?.count ?? 0);
+  }),
 });
 
 // ─── Leads Router ─────────────────────────────────────────────────────────────
